@@ -2,15 +2,27 @@
 
 from __future__ import annotations
 
+import contextlib
+import io
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
 from evaluate_wolfguard_trials import (
     TrialDataError,
     evaluate_records,
     failure_reasons,
+    format_report,
+    load_dataset,
+    main,
     trial_succeeded,
     validate_records,
 )
+
+M0_DIRECTORY = Path(__file__).resolve().parent
+PASSING_DATASET = M0_DIRECTORY / "trial_data" / "passing_example.json"
+FAILING_DATASET = M0_DIRECTORY / "trial_data" / "failing_example.json"
 
 
 def make_record(
@@ -188,6 +200,68 @@ class EvaluationTests(unittest.TestCase):
         result = evaluate_records(paired_records(resolved=False, assisted=True))
         self.assertEqual(len(result["failed_trials"]), 1)
         self.assertEqual(len(result["failed_trials"][0]["reasons"]), 2)
+
+
+class DatasetAndCliTests(unittest.TestCase):
+    def test_known_passing_fixture_meets_both_thresholds(self) -> None:
+        dataset = load_dataset(PASSING_DATASET)
+        result = evaluate_records(dataset["records"])
+        self.assertTrue(result["overall_pass"])
+        self.assertEqual(result["baseline"]["success_rate"], 60.0)
+        self.assertEqual(result["wolfguard"]["success_rate"], 80.0)
+
+    def test_known_failing_fixture_misses_both_thresholds(self) -> None:
+        dataset = load_dataset(FAILING_DATASET)
+        result = evaluate_records(dataset["records"])
+        self.assertFalse(result["overall_pass"])
+        self.assertFalse(result["meets_success_requirement"])
+        self.assertFalse(result["meets_improvement_requirement"])
+
+    def test_text_report_labels_synthetic_evidence(self) -> None:
+        dataset = load_dataset(PASSING_DATASET)
+        report = format_report(dataset, evaluate_records(dataset["records"]))
+        self.assertIn("Evidence type: SYNTHETIC", report)
+        self.assertIn("participant outcome claim remains Not Verified", report)
+
+    def test_loader_rejects_unknown_evidence_type(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "dataset.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "dataset_name": "bad source",
+                        "evidence_type": "guessed",
+                        "records": paired_records(),
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(TrialDataError, "evidence_type"):
+                load_dataset(path)
+
+    def test_cli_returns_zero_for_passing_fixture(self) -> None:
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            exit_code = main([str(PASSING_DATASET)])
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Overall result: PASS", output.getvalue())
+
+    def test_cli_returns_one_for_failing_fixture(self) -> None:
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            exit_code = main([str(FAILING_DATASET)])
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Overall result: FAIL", output.getvalue())
+
+    def test_cli_json_output_is_machine_readable(self) -> None:
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            exit_code = main([str(PASSING_DATASET), "--json"])
+        payload = json.loads(output.getvalue())
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(payload["evidence_type"], "synthetic")
+        self.assertTrue(payload["overall_pass"])
 
 
 if __name__ == "__main__":
