@@ -89,10 +89,16 @@ class WolfGuardSyntheticRehearsalDriver implements WolfGuardRehearsalDriver {
         unknownUnits: 0,
         issues: [
           WolfGuardIssueViewData(
-            title: 'Synthetic category mismatch',
-            explanation: 'The fixture starts with one actionable blocked line.',
-            suggestedNextStep: 'Preview the two-action sample repair.',
-            evidenceLabels: ['synthetic fixture category'],
+            title: 'Synthetic package mismatch',
+            explanation:
+                'The selected 24 oz fixture package conflicts with the 18 oz '
+                'sample benefit evidence.',
+            suggestedNextStep:
+                'Preview a same-category replacement with matching package evidence.',
+            evidenceLabels: [
+              'synthetic selected package: 24 oz',
+              'synthetic benefit package: 18 oz',
+            ],
           ),
         ],
         actionLabel: 'Preview sample repair',

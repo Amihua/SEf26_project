@@ -29,7 +29,8 @@ void main() {
       );
 
       expect(blocked.actionLabel, 'Preview sample repair');
-      expect(blocked.issues.single.evidenceLabels, isNotEmpty);
+      expect(blocked.issues.single.title, contains('package mismatch'));
+      expect(blocked.issues.single.evidenceLabels, hasLength(2));
       expect(unknown.issues.single.title, contains('evidence missing'));
     },
   );
