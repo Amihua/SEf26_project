@@ -189,4 +189,20 @@ void main() {
     expect(find.text('Try WolfGuard rehearsal'), findsOneWidget);
     expect(find.textContaining('Synthetic sample'), findsOneWidget);
   });
+
+  testWidgets('default basket exposes deterministic offline rehearsal', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_host());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Try WolfGuard rehearsal'));
+    await tester.pumpAndSettle();
+    expect(find.text('Try WolfGuard rehearsal'), findsOneWidget);
+    expect(find.textContaining('Synthetic sample'), findsOneWidget);
+    expect(find.text('Covered 1'), findsOneWidget);
+    expect(find.text('Self-paid 1'), findsOneWidget);
+    expect(find.text('Blocked 1'), findsOneWidget);
+    expect(find.text('Unknown 1'), findsOneWidget);
+  });
 }

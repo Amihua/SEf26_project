@@ -11,6 +11,8 @@ import '../widgets/basket_balance_sheet.dart';
 import '../widgets/checkout_help_button.dart';
 import 'checkout_help_samples_screen.dart';
 import '../features/wolfguard/presentation/wolfguard_basket_integration.dart';
+import '../features/wolfguard/presentation/wolfguard_rehearsal_screen.dart';
+import '../features/wolfguard/presentation/wolfguard_synthetic_rehearsal_driver.dart';
 
 /// Screen displaying the user's current shopping basket with item management.
 ///
@@ -65,12 +67,24 @@ class BasketScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('My Basket'),
         actions: [
-          if (wolfGuard?.rehearsalDriver != null)
-            IconButton(
-              icon: const Icon(Icons.shield_outlined),
-              tooltip: 'Try WolfGuard rehearsal',
-              onPressed: () => wolfGuard!.openRehearsal(context),
-            ),
+          IconButton(
+            icon: const Icon(Icons.shield_outlined),
+            tooltip: 'Try WolfGuard rehearsal',
+            onPressed: () async {
+              final integration = wolfGuard;
+              if (integration?.rehearsalDriver != null) {
+                await integration!.openRehearsal(context);
+                return;
+              }
+              await Navigator.of(context).push<void>(
+                MaterialPageRoute<void>(
+                  builder: (_) => WolfGuardRehearsalScreen(
+                    driver: WolfGuardSyntheticRehearsalDriver(),
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.science_outlined),
             tooltip: 'Try sample checkout help',
