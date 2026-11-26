@@ -3,7 +3,7 @@
 Evidence date: 2026-11-26 (America/New_York)  
 Branch: `Sihao`  
 Inherited fork point: `7b55bf1`  
-Verified implementation parent: `33fae7c`
+Verified implementation parent: `ffb8741`
 Final merge SHA: record after integration into the team default branch
 
 ## Honest status
@@ -23,6 +23,8 @@ applier, or catalog ports. Therefore:
   remains pending because those team-owned contracts are not present;
 - the final production rehearsal driver cannot use the shared analyzer/planner
   until those contracts exist;
+- the deterministic 60-second operator runbook is committed, but the required
+  screenshot/clip has not yet been recorded;
 - M0-WG synthetic fixtures verify the instrument only; participant outcome
   claim is **Not Verified**.
 
@@ -60,11 +62,12 @@ Run from `Project2` with Flutter 3.47.2 / Dart 3.13.2.
 
 | Gate | Command | Result |
 | --- | --- | --- |
-| Entire inherited + delta suite | `flutter test --no-pub` | **456/456 passed** |
-| Count reconciliation | inherited 377 + new Sihao 79 | **456 total** |
-| M4 presentation + E2E | `flutter test --no-pub test/features/wolfguard/presentation test/e2e/wolfguard_journey_test.dart` | **79/79 passed** |
-| Device-smoke journey logic | `flutter test --no-pub test/e2e/wolfguard_journey_test.dart` | **2/2 passed** |
-| Linux integration device launch | `flutter test --no-pub integration_test/wolfguard_demo_test.dart` | **Not run**: container lacks CMake; wrapper passes analyzer |
+| Entire inherited + delta suite | `flutter test --no-pub --coverage --concurrency=1` | **457/457 passed** |
+| Count reconciliation | inherited 377 + new Sihao 80 | **457 total** |
+| M4 presentation + E2E | `flutter test --no-pub test/features/wolfguard/presentation test/e2e/wolfguard_journey_test.dart` | **80/80 passed** |
+| Device-wrapper source scenarios | `flutter test --no-pub test/e2e/wolfguard_journey_test.dart test/features/wolfguard/presentation/wolfguard_basket_screen_integration_test.dart` | **9/9 passed** |
+| Linux integration device launch | `flutter test --no-pub integration_test/wolfguard_demo_test.dart` | **Not run**: container lacks CMake; wrapper includes the 9 verified source scenarios and passes analyzer |
+| Flutter line coverage | generated `coverage/lcov.info` | **93.19%**, 2,971/3,188 lines |
 | Strict analyzer | `flutter analyze --no-pub --fatal-infos --fatal-warnings` | **0 issues** |
 | Formatter | `dart format --output=none --set-exit-if-changed lib test integration_test` | **88 files, 0 changed** |
 | Release web build | `flutter build web --release --no-pub` | **PASS**, `build/web` produced |
@@ -142,8 +145,15 @@ messages:
 20. `ca92689` — optional BasketScreen panel and guarded QR handoff
 21. `5affaba` — deterministic four-state rehearsal fixture
 22. `33fae7c` — default offline rehearsal entry from BasketScreen
+23. `7c740b1` — expanded device wrapper coverage
+24. `6abd278` — rehearsal-to-basket isolation acceptance test
+25. `111530a` — explicit package-mismatch evidence scenario
+26. `ffb8741` — deterministic 60-second demo runbook
 
-At the verified parent, Sihao's delta contains 34 changed files, 5,719
+Evidence-only refresh commits are intentionally omitted from this capability
+list but remain visible in the complete Git history.
+
+At the verified parent, Sihao's delta contains 35 changed files, 5,857
 insertions, and 7 deletions. Merge history, not this count alone, is the
 authoritative grading evidence.
 
@@ -161,7 +171,7 @@ After the other owners merge their frozen contracts and implementations:
    `WolfGuardBasketIntegration` seam in the app route/composition root.
 5. Replace the presentation-only rehearsal driver with isolated synthetic
    domain fixtures using the same shared analyzer/planner as the real basket.
-6. Add production-adapter tests, rerun all 456 current tests plus the other
+6. Add production-adapter tests, rerun all 457 current tests plus the other
    owners' tests, analyzer, formatter, web build, Python, JavaScript, inherited
    M0, and M0-WG gates.
 7. Record the merged final SHA and replace every pending status above with
