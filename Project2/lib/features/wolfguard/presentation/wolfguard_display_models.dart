@@ -5,6 +5,71 @@
 /// this immutable display data.
 enum WolfGuardCardState { empty, loading, ready, attention, error }
 
+/// Display outcomes mapped from the shared preflight domain by the adapter.
+enum WolfGuardLineStatus { covered, selfPay, blocked, unknown }
+
+/// Evidence-backed explanation shown for one product line.
+class WolfGuardIssueViewData {
+  const WolfGuardIssueViewData({
+    required this.title,
+    required this.explanation,
+    required this.suggestedNextStep,
+    this.evidenceLabels = const [],
+  });
+
+  final String title;
+  final String explanation;
+  final String suggestedNextStep;
+  final List<String> evidenceLabels;
+}
+
+/// Presentation data for one line in the detailed preflight report.
+class WolfGuardLineViewData {
+  const WolfGuardLineViewData({
+    required this.lineKey,
+    required this.productName,
+    required this.status,
+    required this.quantity,
+    required this.coveredUnits,
+    required this.selfPayUnits,
+    required this.blockedUnits,
+    required this.unknownUnits,
+    this.issues = const [],
+    this.actionLabel,
+  });
+
+  final String lineKey;
+  final String productName;
+  final WolfGuardLineStatus status;
+  final int quantity;
+  final int coveredUnits;
+  final int selfPayUnits;
+  final int blockedUnits;
+  final int unknownUnits;
+  final List<WolfGuardIssueViewData> issues;
+  final String? actionLabel;
+
+  String get statusLabel => switch (status) {
+    WolfGuardLineStatus.covered => 'Expected covered',
+    WolfGuardLineStatus.selfPay => 'Self-paid',
+    WolfGuardLineStatus.blocked => 'Blocked',
+    WolfGuardLineStatus.unknown => 'Unknown',
+  };
+
+  String get semanticsLabel =>
+      '$productName, quantity $quantity, $statusLabel. '
+      '$coveredUnits covered, $selfPayUnits self-paid, '
+      '$blockedUnits blocked, $unknownUnits unknown.';
+}
+
+/// Complete display input for the detailed WolfGuard report.
+class WolfGuardReportViewData {
+  const WolfGuardReportViewData({required this.summary, required this.lines});
+
+  final WolfGuardSummaryViewData summary;
+  final List<WolfGuardLineViewData> lines;
+}
+
 /// Immutable data rendered by the WolfGuard readiness card.
 class WolfGuardSummaryViewData {
   const WolfGuardSummaryViewData._({
