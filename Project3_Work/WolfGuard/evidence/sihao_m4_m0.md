@@ -3,7 +3,7 @@
 Evidence date: 2026-11-26 (America/New_York)  
 Branch: `Sihao`  
 Inherited fork point: `7b55bf1`  
-Verified implementation parent: `d99df68`  
+Verified implementation parent: `2746c4f`
 Final merge SHA: record after integration into the team default branch
 
 ## Honest status
@@ -75,7 +75,7 @@ Implemented under `Project3_Work/WolfGuard/M0/`:
 
 | Gate | Result |
 | --- | --- |
-| M0-WG evaluator + recorder tests | **40/40 passed** |
+| M0-WG evaluator + recorder tests | **42/42 passed** |
 | Known passing synthetic fixture | baseline 3/5 (60%), WolfGuard 4/5 (80%), +20pp, exit 0 |
 | Known failing synthetic fixture | baseline 3/5 (60%), WolfGuard 3/5 (60%), +0pp, exit 1 |
 
@@ -124,8 +124,9 @@ messages:
 15. `48cb197` — complete journey E2E
 16. `b0ee896` — M0 trial protocol
 17. `d99df68` — formatter compliance
+18. `2746c4f` — reject corrupted recording datasets
 
-At the verified parent, Sihao's delta contains 27 files and 4,909 inserted
+At the verified parent, Sihao's delta contains 28 files and 5,077 inserted
 lines. Merge history, not this count alone, is the authoritative grading
 evidence.
 
