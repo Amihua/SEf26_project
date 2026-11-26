@@ -95,12 +95,16 @@ class WolfGuardLiveBasketPanel extends StatelessWidget {
     super.key,
     required this.controller,
     this.onPrepareFix,
+    this.onLoadCandidates,
+    this.onPrepareReplacementFix,
     this.onApplyFix,
     this.onRepairApplied,
   });
 
   final WolfGuardLiveController controller;
   final WolfGuardPrepareFixCallback? onPrepareFix;
+  final WolfGuardLoadCandidatesCallback? onLoadCandidates;
+  final WolfGuardPrepareReplacementFixCallback? onPrepareReplacementFix;
   final WolfGuardApplyPlanCallback? onApplyFix;
   final VoidCallback? onRepairApplied;
 
@@ -117,6 +121,8 @@ class WolfGuardLiveBasketPanel extends StatelessWidget {
           ),
           onRetry: controller.refresh,
           onPrepareFix: onPrepareFix,
+          onLoadCandidates: onLoadCandidates,
+          onPrepareReplacementFix: onPrepareReplacementFix,
           onApplyFix: onApplyFix,
           onRepairApplied: () {
             unawaited(controller.refresh());

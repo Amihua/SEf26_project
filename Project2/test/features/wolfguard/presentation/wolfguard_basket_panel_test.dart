@@ -46,6 +46,14 @@ WolfGuardFixPlanViewData _plan() => WolfGuardFixPlanViewData(
   ],
 );
 
+const _candidate = WolfGuardReplacementCandidateViewData(
+  upc: '007070707070',
+  name: 'Replacement Milk',
+  canonicalCategory: 'Milk',
+  evidenceLabel: 'NC APL exact UPC',
+  packageMatch: WolfGuardPackageMatchView.unknown,
+);
+
 Widget _host(WolfGuardBasketPanel panel) => MaterialApp(
   home: Scaffold(body: SingleChildScrollView(child: panel)),
 );
@@ -168,5 +176,72 @@ void main() {
 
     await tester.tap(find.text('Retry preflight'));
     expect(retries, 1);
+  });
+
+  testWidgets('replacement flow selects evidence before creating preview', (
+    tester,
+  ) async {
+    WolfGuardLineViewData? requestedLine;
+    WolfGuardReplacementCandidateViewData? selectedCandidate;
+    await tester.pumpWidget(
+      _host(
+        WolfGuardBasketPanel(
+          report: _report(),
+          onLoadCandidates: (line) async {
+            requestedLine = line;
+            return const [_candidate];
+          },
+          onPrepareReplacementFix: (line, candidate) async {
+            selectedCandidate = candidate;
+            return _plan();
+          },
+          onApplyFix: (_) async => WolfGuardApplyViewOutcome.applied,
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Review with WolfGuard'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Preview repair'));
+    await tester.pumpAndSettle();
+    expect(requestedLine?.lineKey, 'milk-line');
+    expect(find.text('Replacement Milk'), findsOneWidget);
+
+    await tester.tap(find.text('Use in repair preview'));
+    await tester.pumpAndSettle();
+    expect(selectedCandidate?.upc, '007070707070');
+    expect(find.text('Preview basket repair'), findsOneWidget);
+  });
+
+  testWidgets('closing replacement search is a planner no-op', (tester) async {
+    var plans = 0;
+    var applies = 0;
+    await tester.pumpWidget(
+      _host(
+        WolfGuardBasketPanel(
+          report: _report(),
+          onLoadCandidates: (_) async => const [_candidate],
+          onPrepareReplacementFix: (_, _) async {
+            plans++;
+            return _plan();
+          },
+          onApplyFix: (_) async {
+            applies++;
+            return WolfGuardApplyViewOutcome.applied;
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Review with WolfGuard'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Preview repair'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Close replacement search'));
+    await tester.pumpAndSettle();
+
+    expect(plans, 0);
+    expect(applies, 0);
+    expect(find.text('Preview basket repair'), findsNothing);
   });
 }
