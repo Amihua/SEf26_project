@@ -5,11 +5,12 @@ import 'wolfguard_display_models.dart';
 import 'wolfguard_fix_sheet.dart';
 import 'wolfguard_report_sheet.dart';
 
-/// Presentation port for a fixture session backed by production WolfGuard logic.
+/// Presentation port for an isolated WolfGuard fixture session.
 ///
-/// The eventual integration adapter must create an isolated fixture request and
-/// call the same analyzer/planner used by the real basket. It must never expose
-/// or mutate the signed-in shopper's [AppState].
+/// The final production adapter must call the same analyzer/planner used by the
+/// real basket. An explicitly labeled synthetic presentation driver may be used
+/// before those shared contracts merge, but is not production-analysis
+/// evidence. Neither form may expose or mutate the shopper's [AppState].
 abstract interface class WolfGuardRehearsalDriver {
   Future<WolfGuardReportViewData> loadReport();
 
