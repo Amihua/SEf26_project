@@ -80,9 +80,9 @@ AppState _basketState() {
   return state;
 }
 
-Widget _host({WolfGuardBasketIntegration? integration}) {
+Widget _host({WolfGuardBasketIntegration? integration, AppState? state}) {
   return ChangeNotifierProvider<AppState>.value(
-    value: _basketState(),
+    value: state ?? _basketState(),
     child: MaterialApp(home: BasketScreen(wolfGuard: integration)),
   );
 }
@@ -204,5 +204,41 @@ void main() {
     expect(find.text('Self-paid 1'), findsOneWidget);
     expect(find.text('Blocked 1'), findsOneWidget);
     expect(find.text('Unknown 1'), findsOneWidget);
+  });
+
+  testWidgets('offline repair never changes the inherited shopping basket', (
+    tester,
+  ) async {
+    final state = _basketState();
+    final basketBefore = state.basket
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+    final balancesBefore = state.balances.map(
+      (category, balance) =>
+          MapEntry(category, Map<String, dynamic>.from(balance)),
+    );
+    await tester.pumpWidget(_host(state: state));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Try WolfGuard rehearsal'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Review with WolfGuard'));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, -500));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Preview sample repair').hitTestable());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Apply repairs'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Checkout preflight reviewed'), findsOneWidget);
+    expect(find.text('Covered 2'), findsOneWidget);
+    expect(find.text('Self-paid 2'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    expect(find.text('My Basket'), findsOneWidget);
+    expect(state.basket, basketBefore);
+    expect(state.balances, balancesBefore);
   });
 }
