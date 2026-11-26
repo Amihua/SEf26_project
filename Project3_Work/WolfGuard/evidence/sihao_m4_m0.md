@@ -3,25 +3,32 @@
 Evidence date: 2026-11-26 (America/New_York)  
 Branch: `Sihao`  
 Inherited fork point: `7b55bf1`  
-Verified implementation parent: `a96cc60`
+Verified implementation parent: `33fae7c`
 Final merge SHA: record after integration into the team default branch
 
 ## Honest status
 
-Sihao's isolated presentation and evaluation work is implemented and tested.
-The current repository has no Andy/Wenbo/Feiyang branches or shared WolfGuard
-domain, analyzer, planner, applier, or catalog ports. Therefore:
+Sihao's presentation, evaluation, inherited-screen integration seam, and
+offline rehearsal work are implemented and tested. The current repository has
+no Andy/Wenbo/Feiyang branches or shared WolfGuard domain, analyzer, planner,
+applier, or catalog ports. Therefore:
 
 - the UI is verified against injected fake ports and immutable view data;
 - the full fake-port basket journey is verified offline;
-- `BasketScreen` and the inherited QR navigation have **not** yet been wired to
-  production WolfGuard domain implementations;
-- the rehearsal screen accepts an isolated driver, but the production fixture
-  driver cannot be completed until the shared analyzer/planner contracts exist;
+- `BasketScreen` contains a verified optional WolfGuard panel and safe checkout
+  handoff that preserves the inherited QR destination;
+- the real app exposes a deterministic, clearly labeled offline rehearsal from
+  the basket screen without Firebase or `AppState` dependencies;
+- production injection from `AppState` and the shared WolfGuard implementation
+  remains pending because those team-owned contracts are not present;
+- the final production rehearsal driver cannot use the shared analyzer/planner
+  until those contracts exist;
 - M0-WG synthetic fixtures verify the instrument only; participant outcome
   claim is **Not Verified**.
 
-Do not describe this branch alone as production-integrated M4.
+Do not describe this branch alone as connected to the production WolfGuard
+engine. Its inherited-screen seam and offline rehearsal are integrated; its
+live production data adapter is not.
 
 ## Implemented M4 delta
 
@@ -33,15 +40,19 @@ Do not describe this branch alone as production-integrated M4.
 | Candidate search | Loading, empty, unavailable/retry, exact UPC selection, same-category vs verified package evidence | Verified |
 | Live recalculation | Listens to injected basket changes; rejects stale async results; detaches listener on dispose | Verified with fake source |
 | Safe checkout | Reviewed basket proceeds; risky/error states require review; explicit limitation acknowledgement; cancel no-op | Verified with injected navigation callback |
-| Rehearsal UI | Clearly labeled synthetic, isolated driver, report/repair/apply/retry flow | Verified with fake driver |
+| Rehearsal UI | Clearly labeled synthetic, isolated driver, report/repair/apply/retry flow | Verified with fake driver and built-in deterministic fixture |
 | Full journey | Analyze → report → candidate → preview → apply → recalculate → checkout, plus cancel journey | Verified offline E2E |
+| Inherited BasketScreen/QR wiring | Optional live panel and guarded checkout preserve the existing QR route; omitted integration preserves inherited behavior | Verified |
+| Default app rehearsal entry | Basket-screen shield opens an isolated four-state synthetic scenario and two-action repair flow | Verified |
 | Real AppState/domain adapter | Requires shared M1/M2/M3 contracts | Pending integration |
-| Inherited BasketScreen/QR wiring | Must use the real adapter above | Pending integration |
+| Production shared-logic rehearsal driver | Requires shared analyzer/planner contracts | Pending integration |
 
-All feature source is under
-`Project2/lib/features/wolfguard/presentation/`. The only E2E addition is
-`Project2/test/e2e/wolfguard_journey_test.dart`. No Andy engine/domain, Wenbo
-repair/state, or Feiyang catalog/service file was edited.
+Feature source is under `Project2/lib/features/wolfguard/presentation/`, with a
+narrow optional composition seam in the inherited `basket_screen.dart`. E2E
+coverage remains isolated under `Project2/test/e2e/` and
+`Project2/integration_test/`. Inherited basket tile and state logic was not
+restructured. No Andy engine/domain, Wenbo repair/state, or Feiyang
+catalog/service file was edited.
 
 ## Flutter verification
 
@@ -49,13 +60,13 @@ Run from `Project2` with Flutter 3.47.2 / Dart 3.13.2.
 
 | Gate | Command | Result |
 | --- | --- | --- |
-| Entire inherited + delta suite | `flutter test --no-pub` | **444/444 passed** |
-| Count reconciliation | inherited 377 + new Sihao 67 | **444 total** |
-| M4 presentation + E2E | `flutter test --no-pub test/features/wolfguard/presentation test/e2e/wolfguard_journey_test.dart` | **67/67 passed** |
+| Entire inherited + delta suite | `flutter test --no-pub` | **456/456 passed** |
+| Count reconciliation | inherited 377 + new Sihao 79 | **456 total** |
+| M4 presentation + E2E | `flutter test --no-pub test/features/wolfguard/presentation test/e2e/wolfguard_journey_test.dart` | **79/79 passed** |
 | Device-smoke journey logic | `flutter test --no-pub test/e2e/wolfguard_journey_test.dart` | **2/2 passed** |
 | Linux integration device launch | `flutter test --no-pub integration_test/wolfguard_demo_test.dart` | **Not run**: container lacks CMake; wrapper passes analyzer |
 | Strict analyzer | `flutter analyze --no-pub --fatal-infos --fatal-warnings` | **0 issues** |
-| Formatter | `dart format --output=none --set-exit-if-changed lib test` | **80 files, 0 changed** |
+| Formatter | `dart format --output=none --set-exit-if-changed lib test integration_test` | **88 files, 0 changed** |
 | Release web build | `flutter build web --release --no-pub` | **PASS**, `build/web` produced |
 
 The new test count exceeds Sihao's minimum of 14. It does not replace the other
@@ -128,29 +139,30 @@ messages:
 17. `d99df68` — formatter compliance
 18. `2746c4f` — reject corrupted recording datasets
 19. `a96cc60` — offline device demo smoke wrapper
+20. `ca92689` — optional BasketScreen panel and guarded QR handoff
+21. `5affaba` — deterministic four-state rehearsal fixture
+22. `33fae7c` — default offline rehearsal entry from BasketScreen
 
-At the verified parent, Sihao's delta contains 29 files and 5,094 inserted
-lines. Merge history, not this count alone, is the authoritative grading
-evidence.
+At the verified parent, Sihao's delta contains 34 changed files, 5,719
+insertions, and 7 deletions. Merge history, not this count alone, is the
+authoritative grading evidence.
 
 ## Required integration handoff
 
 After the other owners merge their frozen contracts and implementations:
 
-1. Implement a narrow adapter from `AppState` + the shared analyzer into
-   `WolfGuardLiveReportSource` and immutable display snapshots.
+1. Implement a narrow production adapter from `AppState` + the shared analyzer
+   into `WolfGuardLiveReportSource` and immutable display snapshots.
 2. Map Wenbo's plan and apply outcomes into the existing repair callbacks.
 3. Map Feiyang's candidates into
    `WolfGuardReplacementCandidateViewData` without losing UPC or inventing
    package evidence.
-4. Insert `WolfGuardLiveBasketPanel` into the owned summary area of
-   `basket_screen.dart`; do not restructure inherited basket tiles.
-5. Route the inherited `Ready to Checkout` callback through
-   `coordinateWolfGuardCheckout`, preserving the existing QR destination.
-6. Provide the rehearsal driver with isolated synthetic domain fixtures and
-   the same analyzer/planner used by the real basket.
-7. Add production-adapter tests, rerun all 444 current tests plus the other
+4. Inject that adapter and the repair/catalog callbacks through the existing
+   `WolfGuardBasketIntegration` seam in the app route/composition root.
+5. Replace the presentation-only rehearsal driver with isolated synthetic
+   domain fixtures using the same shared analyzer/planner as the real basket.
+6. Add production-adapter tests, rerun all 456 current tests plus the other
    owners' tests, analyzer, formatter, web build, Python, JavaScript, inherited
    M0, and M0-WG gates.
-8. Record the merged final SHA and replace every pending status above with
+7. Record the merged final SHA and replace every pending status above with
    evidence only after it actually passes.
