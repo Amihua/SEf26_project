@@ -139,7 +139,8 @@ class WolfGuardCard extends StatelessWidget {
       'Add products to start a whole-basket checkout preflight.',
     WolfGuardCardState.loading =>
       'Checking the whole basket against the available evidence.',
-    WolfGuardCardState.ready => 'No blocked or unknown units remain. Review self-paid items before checkout.',
+    WolfGuardCardState.ready =>
+      'No blocked or unknown units remain. Review self-paid items before checkout.',
     WolfGuardCardState.attention =>
       'Some items need a decision before the basket can be called reviewed.',
     WolfGuardCardState.error =>
