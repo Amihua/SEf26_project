@@ -17,6 +17,7 @@ from evaluate_wolfguard_trials import (
     load_dataset,
     main,
     trial_succeeded,
+    validate_trial_record,
     validate_records,
 )
 
@@ -105,6 +106,21 @@ class TrialRuleTests(unittest.TestCase):
 
 
 class ValidationTests(unittest.TestCase):
+    def test_single_trial_validation_does_not_require_pair_yet(self) -> None:
+        record = make_record(trial_id="baseline-only")
+        self.assertIs(validate_trial_record(record), record)
+
+    def test_single_trial_validation_rejects_malformed_record(self) -> None:
+        record = make_record(trial_id="bad", elapsed=-0.1)
+        with self.assertRaisesRegex(TrialDataError, "finite and non-negative"):
+            validate_trial_record(record)
+
+    def test_single_trial_validation_does_not_mutate_input(self) -> None:
+        record = make_record(trial_id="  spaced-id  ")
+        before = dict(record)
+        validate_trial_record(record)
+        self.assertEqual(record, before)
+
     def test_missing_required_field_is_rejected(self) -> None:
         records = paired_records()
         del records[0]["completed"]

@@ -91,6 +91,47 @@ def _non_empty_text(record: dict[str, Any], field: str, location: str) -> str:
     return value.strip()
 
 
+def validate_trial_record(raw_record: Any, index: int = 0) -> dict[str, Any]:
+    """Validate one trial without requiring its paired condition yet."""
+
+    location = f"records[{index}]"
+    if not isinstance(raw_record, dict):
+        raise TrialDataError(f"{location} must be a JSON object.")
+    record: dict[str, Any] = raw_record
+
+    missing = REQUIRED_RECORD_FIELDS - record.keys()
+    if missing:
+        names = ", ".join(sorted(missing))
+        raise TrialDataError(f"{location} is missing required fields: {names}.")
+
+    _non_empty_text(record, "trial_id", location)
+    _non_empty_text(record, "participant_code", location)
+
+    condition = record["condition"]
+    if condition not in VALID_CONDITIONS:
+        allowed = ", ".join(sorted(VALID_CONDITIONS))
+        raise TrialDataError(f"{location}.condition must be one of: {allowed}.")
+
+    scenario = _non_empty_text(record, "scenario_id", location)
+    if scenario not in VALID_SCENARIOS:
+        allowed = ", ".join(sorted(VALID_SCENARIOS))
+        raise TrialDataError(f"{location}.scenario_id must be one of: {allowed}.")
+
+    elapsed = record["elapsed_seconds"]
+    if isinstance(elapsed, bool) or not isinstance(elapsed, (int, float)):
+        raise TrialDataError(f"{location}.elapsed_seconds must be a number.")
+    if not math.isfinite(elapsed) or elapsed < 0:
+        raise TrialDataError(
+            f"{location}.elapsed_seconds must be finite and non-negative."
+        )
+
+    for field in BOOLEAN_FIELDS:
+        if not isinstance(record[field], bool):
+            raise TrialDataError(f"{location}.{field} must be true or false.")
+
+    return record
+
+
 def validate_records(records: list[Any]) -> None:
     """Validate record types, identifiers, conditions, and paired trials."""
 
@@ -101,47 +142,15 @@ def validate_records(records: list[Any]) -> None:
     pair_conditions: dict[tuple[str, str], set[str]] = {}
 
     for index, raw_record in enumerate(records):
-        location = f"records[{index}]"
-        if not isinstance(raw_record, dict):
-            raise TrialDataError(f"{location} must be a JSON object.")
-        record: dict[str, Any] = raw_record
-
-        missing = REQUIRED_RECORD_FIELDS - record.keys()
-        if missing:
-            names = ", ".join(sorted(missing))
-            raise TrialDataError(f"{location} is missing required fields: {names}.")
-
-        trial_id = _non_empty_text(record, "trial_id", location)
+        record = validate_trial_record(raw_record, index=index)
+        trial_id = str(record["trial_id"]).strip()
         if trial_id in seen_trial_ids:
             raise TrialDataError(f"Duplicate trial_id: {trial_id}.")
         seen_trial_ids.add(trial_id)
 
-        participant = _non_empty_text(record, "participant_code", location)
+        participant = str(record["participant_code"]).strip()
         condition = record["condition"]
-        if condition not in VALID_CONDITIONS:
-            allowed = ", ".join(sorted(VALID_CONDITIONS))
-            raise TrialDataError(
-                f"{location}.condition must be one of: {allowed}."
-            )
-
-        scenario = _non_empty_text(record, "scenario_id", location)
-        if scenario not in VALID_SCENARIOS:
-            allowed = ", ".join(sorted(VALID_SCENARIOS))
-            raise TrialDataError(
-                f"{location}.scenario_id must be one of: {allowed}."
-            )
-
-        elapsed = record["elapsed_seconds"]
-        if isinstance(elapsed, bool) or not isinstance(elapsed, (int, float)):
-            raise TrialDataError(f"{location}.elapsed_seconds must be a number.")
-        if not math.isfinite(elapsed) or elapsed < 0:
-            raise TrialDataError(
-                f"{location}.elapsed_seconds must be finite and non-negative."
-            )
-
-        for field in BOOLEAN_FIELDS:
-            if not isinstance(record[field], bool):
-                raise TrialDataError(f"{location}.{field} must be true or false.")
+        scenario = str(record["scenario_id"]).strip()
 
         key = (participant, scenario)
         conditions = pair_conditions.setdefault(key, set())
