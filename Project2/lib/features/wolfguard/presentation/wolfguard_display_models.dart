@@ -1,0 +1,114 @@
+/// Presentation-only states for the WolfGuard basket summary.
+///
+/// These types deliberately do not duplicate the shared business-domain
+/// contract. The integration adapter maps the eventual preflight report into
+/// this immutable display data.
+enum WolfGuardCardState { empty, loading, ready, attention, error }
+
+/// Immutable data rendered by the WolfGuard readiness card.
+class WolfGuardSummaryViewData {
+  const WolfGuardSummaryViewData._({
+    required this.state,
+    required this.totalUnits,
+    required this.coveredUnits,
+    required this.selfPayUnits,
+    required this.blockedUnits,
+    required this.unknownUnits,
+    required this.selfPayAcknowledged,
+    this.errorMessage,
+  });
+
+  /// Builds a summary from already-computed outcome counts.
+  factory WolfGuardSummaryViewData.fromCounts({
+    required int totalUnits,
+    required int coveredUnits,
+    required int selfPayUnits,
+    required int blockedUnits,
+    required int unknownUnits,
+    bool selfPayAcknowledged = false,
+  }) {
+    assert(totalUnits >= 0);
+    assert(coveredUnits >= 0);
+    assert(selfPayUnits >= 0);
+    assert(blockedUnits >= 0);
+    assert(unknownUnits >= 0);
+    assert(
+      coveredUnits + selfPayUnits + blockedUnits + unknownUnits == totalUnits,
+      'Every basket unit must have exactly one displayed outcome.',
+    );
+
+    final WolfGuardCardState state;
+    if (totalUnits == 0) {
+      state = WolfGuardCardState.empty;
+    } else if (blockedUnits > 0 ||
+        unknownUnits > 0 ||
+        (selfPayUnits > 0 && !selfPayAcknowledged)) {
+      state = WolfGuardCardState.attention;
+    } else {
+      state = WolfGuardCardState.ready;
+    }
+
+    return WolfGuardSummaryViewData._(
+      state: state,
+      totalUnits: totalUnits,
+      coveredUnits: coveredUnits,
+      selfPayUnits: selfPayUnits,
+      blockedUnits: blockedUnits,
+      unknownUnits: unknownUnits,
+      selfPayAcknowledged: selfPayAcknowledged,
+    );
+  }
+
+  /// Summary shown while the application is computing a report.
+  const WolfGuardSummaryViewData.loading()
+    : this._(
+        state: WolfGuardCardState.loading,
+        totalUnits: 0,
+        coveredUnits: 0,
+        selfPayUnits: 0,
+        blockedUnits: 0,
+        unknownUnits: 0,
+        selfPayAcknowledged: false,
+      );
+
+  /// Summary shown when the report could not be computed.
+  const WolfGuardSummaryViewData.error(String message)
+    : this._(
+        state: WolfGuardCardState.error,
+        totalUnits: 0,
+        coveredUnits: 0,
+        selfPayUnits: 0,
+        blockedUnits: 0,
+        unknownUnits: 0,
+        selfPayAcknowledged: false,
+        errorMessage: message,
+      );
+
+  final WolfGuardCardState state;
+  final int totalUnits;
+  final int coveredUnits;
+  final int selfPayUnits;
+  final int blockedUnits;
+  final int unknownUnits;
+  final bool selfPayAcknowledged;
+  final String? errorMessage;
+
+  bool get readyForHandoff => state == WolfGuardCardState.ready;
+
+  String get semanticsLabel => switch (state) {
+    WolfGuardCardState.empty =>
+      'WolfGuard checkout preflight. Basket is empty.',
+    WolfGuardCardState.loading =>
+      'WolfGuard checkout preflight is checking the basket.',
+    WolfGuardCardState.error =>
+      'WolfGuard checkout preflight could not check the basket.',
+    WolfGuardCardState.ready =>
+      'WolfGuard checkout preflight reviewed. '
+          '$coveredUnits covered, $selfPayUnits self-paid, '
+          '$blockedUnits blocked, $unknownUnits unknown.',
+    WolfGuardCardState.attention =>
+      'WolfGuard checkout preflight needs review. '
+          '$coveredUnits covered, $selfPayUnits self-paid, '
+          '$blockedUnits blocked, $unknownUnits unknown.',
+  };
+}
