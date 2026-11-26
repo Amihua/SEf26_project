@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "dataset_name": "WolfGuard M0-WG known failing instrument fixture",
+  "evidence_type": "synthetic",
+  "records": [
+    {"trial_id":"P01-baseline-S1","participant_code":"P01","condition":"baseline","scenario_id":"WG-S1","elapsed_seconds":48,"actionable_issues_resolved":true,"unsafe_coverage_claim":false,"unknown_acknowledged":true,"outside_assistance":false,"completed":true},
+    {"trial_id":"P01-wolfguard-S1","participant_code":"P01","condition":"wolfguard","scenario_id":"WG-S1","elapsed_seconds":24,"actionable_issues_resolved":true,"unsafe_coverage_claim":false,"unknown_acknowledged":true,"outside_assistance":false,"completed":true},
+    {"trial_id":"P02-baseline-S1","participant_code":"P02","condition":"baseline","scenario_id":"WG-S1","elapsed_seconds":57,"actionable_issues_resolved":true,"unsafe_coverage_claim":false,"unknown_acknowledged":true,"outside_assistance":false,"completed":true},
+    {"trial_id":"P02-wolfguard-S1","participant_code":"P02","condition":"wolfguard","scenario_id":"WG-S1","elapsed_seconds":31,"actionable_issues_resolved":true,"unsafe_coverage_claim":false,"unknown_acknowledged":true,"outside_assistance":false,"completed":true},
+    {"trial_id":"P03-baseline-S1","participant_code":"P03","condition":"baseline","scenario_id":"WG-S1","elapsed_seconds":60,"actionable_issues_resolved":true,"unsafe_coverage_claim":false,"unknown_acknowledged":true,"outside_assistance":false,"completed":true},
+    {"trial_id":"P03-wolfguard-S1","participant_code":"P03","condition":"wolfguard","scenario_id":"WG-S1","elapsed_seconds":36,"actionable_issues_resolved":true,"unsafe_coverage_claim":false,"unknown_acknowledged":true,"outside_assistance":false,"completed":true},
+    {"trial_id":"P04-baseline-S1","participant_code":"P04","condition":"baseline","scenario_id":"WG-S1","elapsed_seconds":72,"actionable_issues_resolved":false,"unsafe_coverage_claim":false,"unknown_acknowledged":true,"outside_assistance":false,"completed":false},
+    {"trial_id":"P04-wolfguard-S1","participant_code":"P04","condition":"wolfguard","scenario_id":"WG-S1","elapsed_seconds":74,"actionable_issues_resolved":false,"unsafe_coverage_claim":false,"unknown_acknowledged":true,"outside_assistance":false,"completed":false},
+    {"trial_id":"P05-baseline-S1","participant_code":"P05","condition":"baseline","scenario_id":"WG-S1","elapsed_seconds":38,"actionable_issues_resolved":false,"unsafe_coverage_claim":true,"unknown_acknowledged":false,"outside_assistance":false,"completed":true},
+    {"trial_id":"P05-wolfguard-S1","participant_code":"P05","condition":"wolfguard","scenario_id":"WG-S1","elapsed_seconds":41,"actionable_issues_resolved":false,"unsafe_coverage_claim":true,"unknown_acknowledged":false,"outside_assistance":false,"completed":true}
+  ]
+}

@@ -10,6 +10,9 @@ import '../services/checkout_help_repository.dart';
 import '../widgets/basket_balance_sheet.dart';
 import '../widgets/checkout_help_button.dart';
 import 'checkout_help_samples_screen.dart';
+import '../features/wolfguard/presentation/wolfguard_basket_integration.dart';
+import '../features/wolfguard/presentation/wolfguard_rehearsal_screen.dart';
+import '../features/wolfguard/presentation/wolfguard_synthetic_rehearsal_driver.dart';
 
 /// Screen displaying the user's current shopping basket with item management.
 ///
@@ -31,10 +34,15 @@ class BasketScreen extends StatelessWidget {
   const BasketScreen({
     super.key,
     this.checkoutHelpRepository = const CheckoutHelpRepository(),
+    this.wolfGuard,
   });
 
   /// Source of explicitly synthetic help examples; ordinary lines use app allowance guidance.
   final CheckoutHelpRepository checkoutHelpRepository;
+
+  /// Optional Project 3 presentation integration; inherited behavior remains
+  /// unchanged when omitted.
+  final WolfGuardBasketIntegration? wolfGuard;
   static const Color _primaryRed = Color(0xFFD1001C);
 
   @override
@@ -59,6 +67,24 @@ class BasketScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('My Basket'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.shield_outlined),
+            tooltip: 'Try WolfGuard rehearsal',
+            onPressed: () async {
+              final integration = wolfGuard;
+              if (integration?.rehearsalDriver != null) {
+                await integration!.openRehearsal(context);
+                return;
+              }
+              await Navigator.of(context).push<void>(
+                MaterialPageRoute<void>(
+                  builder: (_) => WolfGuardRehearsalScreen(
+                    driver: WolfGuardSyntheticRehearsalDriver(),
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.science_outlined),
             tooltip: 'Try sample checkout help',
@@ -214,7 +240,7 @@ class BasketScreen extends StatelessWidget {
     AppState app,
     int totalItems,
   ) {
-    return Card(
+    final summaryCard = Card(
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
@@ -290,12 +316,21 @@ class BasketScreen extends StatelessWidget {
 
             // Existing checkout navigation.
             FilledButton.icon(
-              onPressed: () {
-                Navigator.of(context, rootNavigator: true).push(
-                  MaterialPageRoute(
-                    builder: (context) => const QRCheckoutScreen(),
-                  ),
-                );
+              onPressed: () async {
+                void openQrCheckout() {
+                  Navigator.of(context, rootNavigator: true).push(
+                    MaterialPageRoute<void>(
+                      builder: (context) => const QRCheckoutScreen(),
+                    ),
+                  );
+                }
+
+                final integration = wolfGuard;
+                if (integration != null) {
+                  await integration.checkout(context, openQrCheckout);
+                  return;
+                }
+                openQrCheckout();
               },
               style: FilledButton.styleFrom(
                 backgroundColor: _primaryRed,
@@ -347,6 +382,17 @@ class BasketScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+
+    final integration = wolfGuard;
+    if (integration == null) return summaryCard;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        integration.buildPanel(),
+        const SizedBox(height: 16),
+        summaryCard,
+      ],
     );
   }
 
