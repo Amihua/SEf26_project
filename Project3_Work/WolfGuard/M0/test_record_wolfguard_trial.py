@@ -16,6 +16,7 @@ from record_wolfguard_trial import (
     main,
     new_dataset,
     pair_counts,
+    validate_recording_records,
     write_dataset_atomic,
 )
 
@@ -95,6 +96,16 @@ class RecordingTests(unittest.TestCase):
         duplicate = record(trial_id="different-id")
         with self.assertRaisesRegex(TrialDataError, "only one record"):
             append_trial(dataset, duplicate)
+
+    def test_preexisting_duplicate_trial_ids_are_rejected_on_load(self) -> None:
+        records = [record(), record()]
+        with self.assertRaisesRegex(TrialDataError, "Duplicate trial_id"):
+            validate_recording_records(records)
+
+    def test_preexisting_duplicate_pair_condition_is_rejected_on_load(self) -> None:
+        records = [record(), record(trial_id="different-id")]
+        with self.assertRaisesRegex(TrialDataError, "only one record"):
+            validate_recording_records(records)
 
     def test_atomic_write_round_trip_supports_incomplete_pair(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

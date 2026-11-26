@@ -65,11 +65,35 @@ def load_recording_dataset(path: str | Path) -> dict[str, Any]:
         raise TrialDataError(f"Dataset evidence_type must be one of: {allowed}.")
 
     records = dataset.get("records")
+    validate_recording_records(records)
+    return dataset
+
+
+def validate_recording_records(records: Any) -> None:
+    """Validate individual fields and uniqueness without requiring pairs."""
+
     if not isinstance(records, list):
         raise TrialDataError("Records must be a list while trials are recorded.")
-    for index, record in enumerate(records):
-        validate_trial_record(record, index=index)
-    return dataset
+
+    seen_trial_ids: set[str] = set()
+    seen_pair_conditions: set[tuple[str, str, str]] = set()
+    for index, raw_record in enumerate(records):
+        record = validate_trial_record(raw_record, index=index)
+        trial_id = str(record["trial_id"]).strip()
+        if trial_id in seen_trial_ids:
+            raise TrialDataError(f"Duplicate trial_id: {trial_id}.")
+        seen_trial_ids.add(trial_id)
+
+        participant = str(record["participant_code"]).strip()
+        scenario = str(record["scenario_id"]).strip()
+        condition = str(record["condition"])
+        key = (participant, scenario, condition)
+        if key in seen_pair_conditions:
+            raise TrialDataError(
+                "Each participant/scenario pair may have only one record per "
+                f"condition: {participant}/{scenario}/{condition}."
+            )
+        seen_pair_conditions.add(key)
 
 
 def append_trial(
@@ -78,29 +102,10 @@ def append_trial(
     """Return a copy with one valid, non-duplicate trial appended."""
 
     records = dataset.get("records")
-    if not isinstance(records, list):
-        raise TrialDataError("Records must be a list while trials are recorded.")
-    validate_trial_record(record, index=len(records))
-
-    trial_id = str(record["trial_id"]).strip()
-    participant = str(record["participant_code"]).strip()
-    scenario = str(record["scenario_id"]).strip()
-    condition = record["condition"]
-    for existing in records:
-        if str(existing["trial_id"]).strip() == trial_id:
-            raise TrialDataError(f"Duplicate trial_id: {trial_id}.")
-        same_pair_condition = (
-            str(existing["participant_code"]).strip() == participant
-            and str(existing["scenario_id"]).strip() == scenario
-            and existing["condition"] == condition
-        )
-        if same_pair_condition:
-            raise TrialDataError(
-                "Each participant/scenario pair may have only one record per "
-                f"condition: {participant}/{scenario}/{condition}."
-            )
-
-    return {**dataset, "records": [*records, dict(record)]}
+    validate_recording_records(records)
+    updated_records = [*records, dict(record)]
+    validate_recording_records(updated_records)
+    return {**dataset, "records": updated_records}
 
 
 def pair_counts(records: list[dict[str, Any]]) -> tuple[int, int]:
