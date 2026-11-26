@@ -3,7 +3,7 @@
 Evidence date: 2026-11-26 (America/New_York)  
 Branch: `Sihao`  
 Inherited fork point: `7b55bf1`  
-Verified implementation parent: `2746c4f`
+Verified implementation parent: `a96cc60`
 Final merge SHA: record after integration into the team default branch
 
 ## Honest status
@@ -52,6 +52,8 @@ Run from `Project2` with Flutter 3.47.2 / Dart 3.13.2.
 | Entire inherited + delta suite | `flutter test --no-pub` | **444/444 passed** |
 | Count reconciliation | inherited 377 + new Sihao 67 | **444 total** |
 | M4 presentation + E2E | `flutter test --no-pub test/features/wolfguard/presentation test/e2e/wolfguard_journey_test.dart` | **67/67 passed** |
+| Device-smoke journey logic | `flutter test --no-pub test/e2e/wolfguard_journey_test.dart` | **2/2 passed** |
+| Linux integration device launch | `flutter test --no-pub integration_test/wolfguard_demo_test.dart` | **Not run**: container lacks CMake; wrapper passes analyzer |
 | Strict analyzer | `flutter analyze --no-pub --fatal-infos --fatal-warnings` | **0 issues** |
 | Formatter | `dart format --output=none --set-exit-if-changed lib test` | **80 files, 0 changed** |
 | Release web build | `flutter build web --release --no-pub` | **PASS**, `build/web` produced |
@@ -125,8 +127,9 @@ messages:
 16. `b0ee896` — M0 trial protocol
 17. `d99df68` — formatter compliance
 18. `2746c4f` — reject corrupted recording datasets
+19. `a96cc60` — offline device demo smoke wrapper
 
-At the verified parent, Sihao's delta contains 28 files and 5,077 inserted
+At the verified parent, Sihao's delta contains 29 files and 5,094 inserted
 lines. Merge history, not this count alone, is the authoritative grading
 evidence.
 
