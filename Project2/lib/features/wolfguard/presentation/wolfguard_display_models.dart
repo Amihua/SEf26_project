@@ -70,6 +70,40 @@ class WolfGuardReportViewData {
   final List<WolfGuardLineViewData> lines;
 }
 
+/// One proposed basket change shown before the shopper confirms it.
+class WolfGuardFixActionViewData {
+  const WolfGuardFixActionViewData({
+    required this.title,
+    required this.description,
+  });
+
+  final String title;
+  final String description;
+}
+
+/// Read-only repair-plan preview mapped from the shared repair domain.
+class WolfGuardFixPlanViewData {
+  const WolfGuardFixPlanViewData({
+    required this.planId,
+    required this.before,
+    required this.projectedAfter,
+    required this.actions,
+  });
+
+  final String planId;
+  final WolfGuardSummaryViewData before;
+  final WolfGuardSummaryViewData projectedAfter;
+  final List<WolfGuardFixActionViewData> actions;
+}
+
+/// Presentation outcomes mapped from Wenbo's plan-application result.
+enum WolfGuardApplyViewOutcome {
+  applied,
+  stalePlan,
+  unsupportedAction,
+  persistenceFailed,
+}
+
 /// Immutable data rendered by the WolfGuard readiness card.
 class WolfGuardSummaryViewData {
   const WolfGuardSummaryViewData._({
