@@ -8,6 +8,42 @@ enum WolfGuardCardState { empty, loading, ready, attention, error }
 /// Display outcomes mapped from the shared preflight domain by the adapter.
 enum WolfGuardLineStatus { covered, selfPay, blocked, unknown }
 
+/// Whether comparable, explicit package evidence supports a candidate match.
+enum WolfGuardPackageMatchView { verified, unknown }
+
+/// Read-only replacement candidate mapped from the catalog provider.
+class WolfGuardReplacementCandidateViewData {
+  const WolfGuardReplacementCandidateViewData({
+    required this.upc,
+    required this.name,
+    required this.canonicalCategory,
+    required this.evidenceLabel,
+    required this.packageMatch,
+    this.packageEvidenceLabel,
+  }) : assert(upc != ''),
+       assert(name != ''),
+       assert(canonicalCategory != ''),
+       assert(
+         packageMatch != WolfGuardPackageMatchView.verified ||
+             packageEvidenceLabel != null,
+         'A verified package match must name its explicit evidence.',
+       );
+
+  final String upc;
+  final String name;
+  final String canonicalCategory;
+  final String evidenceLabel;
+  final WolfGuardPackageMatchView packageMatch;
+  final String? packageEvidenceLabel;
+
+  String get packageStatusLabel => switch (packageMatch) {
+    WolfGuardPackageMatchView.verified =>
+      'Verified package match · $packageEvidenceLabel',
+    WolfGuardPackageMatchView.unknown =>
+      'Package match unknown · no verified comparable size evidence',
+  };
+}
+
 /// Evidence-backed explanation shown for one product line.
 class WolfGuardIssueViewData {
   const WolfGuardIssueViewData({
