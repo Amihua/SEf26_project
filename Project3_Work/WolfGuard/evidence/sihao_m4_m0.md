@@ -4,7 +4,7 @@ Evidence date: 2026-11-27 (America/New_York)
 Branch: `Sihao`
 Inherited fork point: `7b55bf1`
 Shared M1/M2 integration base: `d2005dd`
-Verified implementation parent: `a1a6805`
+Verified implementation parent: `0f92253`
 Final merge SHA: record after integration into the team default branch
 
 ## Honest status
@@ -24,8 +24,9 @@ branch. Therefore:
 - the default offline rehearsal uses the same M1 analyzer, M2 planner, M2
   applier, and presentation mapper as the live basket while keeping all state
   isolated;
-- candidate UI is ready, but production replacement lookup remains pending
-  until Feiyang's `CandidateProvider` implementation merges;
+- candidate mapping, stale-safe domain-candidate caching, replacement planning,
+  and the optional production composition seam are ready; the normal route
+  keeps them disabled until Feiyang's concrete `CandidateProvider` merges;
 - the deterministic 60-second operator runbook is committed, but the required
   screenshot/clip has not yet been recorded;
 - M0-WG synthetic fixtures verify the instrument only; participant outcome
@@ -42,15 +43,15 @@ replacement path or the four-milestone team delta is complete yet.
 | Readiness states | Empty, loading, ready, attention, error; covered/self-paid/blocked/unknown counts; semantic status | Verified |
 | Detailed report | Aggregate counts, stable line keys, item status, issues, evidence, next step, actions | Verified |
 | Repair confirmation | Before/after preview, explicit apply, cancel no-op, repeated-tap lock, stale/unsupported/persistence errors | Verified |
-| Candidate search UI | Loading, empty, unavailable/retry, exact UPC selection, same-category vs verified package evidence | Verified with fake provider; production M3 pending |
+| Candidate search UI | Loading, empty, unavailable/retry, exact UPC selection, same-category vs exact package-match evidence | Verified through optional production seam; concrete M3 pending |
 | Live recalculation | Exact-UPCs through inherited APL, immutable AppState snapshot, M1 analysis, stale async rejection, listener disposal | Verified on production route |
 | Safe checkout | Unknown basket blocked before QR; repaired basket reaches inherited QR; acknowledgement and cancel remain available | Verified on production route |
 | Rehearsal UI | Clearly labeled synthetic; real M1/M2 analyzer/planner/applier; report/preview/apply/retry; AppState isolation | Verified |
 | Full M1/M2/M4 journey | Live AppState → report → preview → atomic apply → recalculate → inherited QR | Verified |
-| Replacement journey | Candidate → replacement preview → apply | Verified with fake provider only; production M3 pending |
+| Replacement journey | Domain candidate → UI selection → M2 preview → atomic apply → recalculate → QR | Verified through production wrapper with injected provider; concrete M3 pending |
 | Inherited BasketScreen/QR wiring | Optional live panel and guarded checkout preserve the existing QR route; omitted integration preserves inherited behavior | Verified |
 | Default app rehearsal entry | Basket-screen shield opens an isolated four-state scenario using shared M1/M2 logic | Verified |
-| Real AppState/domain adapter | M1 report source and M2 repair coordinator | Verified; M3 callbacks pending |
+| Real AppState/domain adapter | M1 report source, M2 repair coordinator, optional M3 callbacks | Verified; concrete M3 provider pending |
 | Production shared-logic rehearsal driver | Same M1 analyzer, M2 planner/applier, and mapper as normal basket | Verified |
 
 Feature source is under `Project2/lib/features/wolfguard/presentation/`, with a
@@ -66,17 +67,17 @@ Run from `Project2` with Flutter 3.47.2 / Dart 3.13.2.
 
 | Gate | Command | Result |
 | --- | --- | --- |
-| Entire inherited + merged delta suite | `flutter test --no-pub --coverage --concurrency=1` | **632/632 passed** |
-| Team count reconciliation | inherited 377 + merged delta 255 | **632 total** |
-| Sihao presentation + E2E | `flutter test --no-pub test/features/wolfguard/presentation test/e2e/wolfguard_journey_test.dart` | **108/108 passed** |
-| Device-wrapper source scenarios | E2E + optional seam + production basket + domain rehearsal source files | **20/20 passed** |
-| Linux integration device launch | `flutter test --no-pub integration_test/wolfguard_demo_test.dart` | **Not run**: container lacks CMake; wrapper includes the 20 verified source scenarios and passes analyzer |
-| Flutter line coverage | generated `coverage/lcov.info` | **92.47%**, 3,957/4,279 lines |
+| Entire inherited + merged delta suite | `flutter test --no-pub --coverage --concurrency=1` | **640/640 passed** |
+| Team count reconciliation | inherited 377 + merged delta 263 | **640 total** |
+| Sihao presentation + E2E | `flutter test --no-pub test/features/wolfguard/presentation test/e2e/wolfguard_journey_test.dart` | **116/116 passed** |
+| Device-wrapper source scenarios | E2E + optional seam + production basket + domain rehearsal source files | **21/21 passed** |
+| Linux integration device launch | `flutter test --no-pub integration_test/wolfguard_demo_test.dart` | **Not run**: container lacks CMake; wrapper includes the 21 verified source scenarios and passes analyzer |
+| Flutter line coverage | generated `coverage/lcov.info` | **92.86%**, 4,043/4,354 lines |
 | Strict analyzer | `flutter analyze --no-pub --fatal-infos --fatal-warnings` | **0 issues** |
 | Formatter | `dart format --output=none --set-exit-if-changed lib test integration_test` | **118 files, 0 changed** |
 | Release web build | `flutter build web --release --no-pub` | **PASS**, `build/web` produced |
 
-Sihao's 108 presentation/E2E tests exceed the minimum of 14. The merged suite
+Sihao's 116 presentation/E2E tests exceed the minimum of 14. The merged suite
 also exceeds the team target of 100. A final rerun remains required after M3.
 
 ## M0-WG instrument
@@ -162,12 +163,15 @@ messages:
 33. `9b03d65` — shared-domain rehearsal on the basket route
 34. `c9345a6` — production device-smoke coverage
 35. `a1a6805` — production checkout-handoff acceptance
+36. `db4c94e` — conservative M3 candidate evidence mapping
+37. `717f399` — selected domain candidate to M2 repair bridge
+38. `0f92253` — optional M3 production composition seam
 
 Evidence-only refresh commits are intentionally omitted from this capability
 list but remain visible in the complete Git history.
 
 From shared integration base `d2005dd` through the verified parent, the Sihao
-integration tranche contains 12 changed files, 1,326 insertions, and 5
+integration tranche contains 14 changed files, 1,867 insertions, and 77
 deletions. Merge history, not this count alone, is the authoritative grading
 evidence.
 
@@ -175,17 +179,16 @@ evidence.
 
 After Feiyang merges the M3 implementation:
 
-1. Map Feiyang's domain candidates into
-   `WolfGuardReplacementCandidateViewData` without losing UPC or inventing
-   package evidence.
-2. Extend `WolfGuardAppStateRepairCoordinator` to pass only the selected M3
-   candidate into Wenbo's planner.
-3. Inject the existing candidate callbacks through
-   `WolfGuardBasketIntegration`; do not restructure `BasketScreen`.
-4. Add M3 production-adapter tests, rerun all 632 current tests plus M3 tests,
+1. Instantiate Feiyang's concrete `AplCandidateProvider` from the inherited
+   catalog service and pass it to `WolfGuardBasketScreen`; do not restructure
+   `BasketScreen`.
+2. Add a concrete-provider integration test proving exact UPC preservation,
+   canonical-category filtering, duplicate removal, retryable source failure,
+   and no basket mutation before confirm.
+3. Rerun all 640 current tests plus M3 tests,
    regenerate coverage, and rerun analyzer, formatter, web build, Python,
    JavaScript, inherited M0, and M0-WG gates.
-5. Run JavaScript gates in CI or a Node-equipped clone; the current container
+4. Run JavaScript gates in CI or a Node-equipped clone; the current container
    has no `node`, `nodejs`, or `npm`.
-6. Record the screenshot/clip, merged final SHA, and final evidence only after
+5. Record the screenshot/clip, merged final SHA, and final evidence only after
    M3 and the visual artifact actually pass.

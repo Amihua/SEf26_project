@@ -44,7 +44,7 @@ flutter test --no-pub \
   test/features/wolfguard/presentation/wolfguard_domain_rehearsal_driver_test.dart
 ```
 
-Expected result: 11 tests pass. The production-route rehearsal test completes
+Expected result: 12 tests pass. The production-route rehearsal test completes
 the repair, returns to the inherited Basket, and compares both basket contents
 and balances with their pre-rehearsal snapshots.
 
@@ -54,8 +54,8 @@ For a device-equipped machine, run:
 flutter test --no-pub integration_test/wolfguard_demo_test.dart -d DEVICE_ID
 ```
 
-The device wrapper includes 20 verified source scenarios: two full journey
-tests, seven optional-seam tests, five production-basket tests, and six
+The device wrapper includes 21 verified source scenarios: two full journey
+tests, seven optional-seam tests, six production-basket tests, and six
 shared-domain rehearsal tests. It uses fake or synthetic evidence and does not
 contact production services.
 
