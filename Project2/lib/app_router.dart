@@ -6,8 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wolfbite/screens/login_screen.dart';
 import 'package:wolfbite/screens/signup_page.dart';
 
+import 'features/wolfguard/presentation/wolfguard_basket_screen.dart';
 import 'screens/scan_screen.dart';
-import 'screens/basket_screen.dart';
 import 'screens/balances_screen.dart';
 import 'screens/receipt_scanner_screen.dart';
 
@@ -52,7 +52,7 @@ class GoRouterRefreshStream extends ChangeNotifier {
 ///
 /// Main screens are wrapped in [_MainShell] which provides the bottom
 /// navigation bar for seamless tab switching between [ScanScreen],
-/// [BasketScreen], and [BalancesScreen].
+/// [WolfGuardBasketScreen], and [BalancesScreen].
 ///
 /// Usage: Configure in [MaterialApp.router] via `routerConfig: router`
 final GoRouter router = GoRouter(
@@ -114,7 +114,7 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: '/basket',
           pageBuilder: (context, state) =>
-              const NoTransitionPage(child: BasketScreen()),
+              const NoTransitionPage(child: WolfGuardBasketScreen()),
         ),
 
         // WIC benefit balance display screen.
@@ -216,7 +216,8 @@ final GoRouter router = GoRouter(
 
 /// Shell widget that provides a persistent bottom navigation bar.
 ///
-/// Wraps [ScanScreen], [BasketScreen], and [BalancesScreen] in a [Scaffold]
+/// Wraps [ScanScreen], [WolfGuardBasketScreen], and [BalancesScreen] in a
+/// [Scaffold]
 /// with a [NavigationBar] at the bottom. This allows seamless tab switching
 /// while shared basket state is held in the application provider.
 ///
@@ -288,7 +289,7 @@ class _MainShell extends StatelessWidget {
     final selected = _selectedIndexFor(path);
 
     return Scaffold(
-      /// Display the current screen (ScanScreen, BasketScreen, or BalancesScreen).
+      /// Display the current screen (scan, WolfGuard basket, or balances).
       body: child,
 
       /// Bottom navigation bar with three tabs.
