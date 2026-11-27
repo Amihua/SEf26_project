@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../features/wolfguard/repair/fix_plan_applier.dart';
 import '../utils/nutritional_utils.dart';
 import '../utils/wic_categories.dart';
 import '../services/apl_service.dart';
@@ -17,7 +18,7 @@ import '../services/apl_service.dart';
 ///
 /// Usage: Wire this into your app via [ChangeNotifierProxyProvider] in
 /// `main.dart` to automatically sync with [FirebaseAuth] state changes.
-class AppState extends ChangeNotifier {
+class AppState extends ChangeNotifier implements RepairTarget {
   // final _db = FirebaseFirestore.instance;
 
   final FirebaseFirestore _db;
@@ -40,6 +41,7 @@ class AppState extends ChangeNotifier {
   /// Checkout retains usage; removing basket items releases their allocation.
   /// Loading a record from a different month resets usage and clears the basket.
   /// Example: `{ 'MILK': { 'allowed': 3, 'used': 1 } }`
+  @override
   Map<String, Map<String, dynamic>> balances = {};
 
   /// The user's current shopping basket.
@@ -55,6 +57,7 @@ class AppState extends ChangeNotifier {
   ///   explicit synthetic-scenario metadata
   ///
   /// The same UPC can have both a benefit-category line and a PAID line.
+  @override
   final List<Map<String, dynamic>> basket = [];
 
   // ---------- Auth/user ----------
@@ -668,5 +671,69 @@ class AppState extends ChangeNotifier {
 
     _persist();
     notifyListeners();
+  }
+
+  // ---------- WolfGuard (Project 3, M2) ----------
+
+  /// Applies a confirmed WolfGuard repair plan in one awaited write.
+  ///
+  /// This is the single WolfGuard entry point section 5.5 of
+  /// `Project3_Work/WolfGuard/WOLFGUARD_ALL_IN_ONE_PLAN.md` permits in this
+  /// file. It exists because the public mutations above cannot satisfy the M2
+  /// contract:
+  ///
+  /// - [decrementItem] always takes from the `PAID` line for a UPC when one
+  ///   exists, so it cannot target the benefit line a plan names;
+  /// - no public mutation moves units from a benefit line to `PAID`, which is
+  ///   what a self-pay repair does;
+  /// - [addItem], [incrementItem] and [decrementItem] start [_persist]
+  ///   without awaiting it, so a failed write cannot be reported, while FR-5
+  ///   requires persistence errors to be surfaced.
+  ///
+  /// [WolfGuardFixPlanApplier] computes [basket] and [balances] from a
+  /// confirmed plan and hands them over here. This method does not interpret
+  /// the plan, derive allowances, or apply repair rules of its own.
+  ///
+  /// Returns true only after the write completes. On failure the previous
+  /// basket and balances are restored and false is returned, so the caller
+  /// reports `ApplyPlanResult.persistenceFailed` instead of success.
+  ///
+  /// Side effects on success: replaces [basket] and [balances], writes to
+  /// [FirebaseFirestore], and calls [notifyListeners].
+  @override
+  Future<bool> commitWolfGuardRepair({
+    required List<Map<String, dynamic>> basket,
+    required Map<String, Map<String, dynamic>> balances,
+  }) async {
+    if (_uid == null) return false;
+
+    final previousBasket = this.basket
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+    final previousBalances = {
+      for (final entry in this.balances.entries)
+        entry.key: Map<String, dynamic>.from(entry.value),
+    };
+
+    this.basket
+      ..clear()
+      ..addAll(basket);
+    this.balances = balances;
+
+    try {
+      await _persist();
+    } catch (error, stackTrace) {
+      this.basket
+        ..clear()
+        ..addAll(previousBasket);
+      this.balances = previousBalances;
+      debugPrint('WolfGuard repair could not be saved: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      notifyListeners();
+      return false;
+    }
+
+    notifyListeners();
+    return true;
   }
 }
