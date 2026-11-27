@@ -1,36 +1,39 @@
 # Sihao M4 + M0 Engineering Evidence
 
-Evidence date: 2026-11-26 (America/New_York)  
-Branch: `Sihao`  
-Inherited fork point: `7b55bf1`  
-Verified implementation parent: `ffb8741`
+Evidence date: 2026-11-27 (America/New_York)
+Branch: `Sihao`
+Inherited fork point: `7b55bf1`
+Shared M1/M2 integration base: `d2005dd`
+Verified implementation parent: `a1a6805`
 Final merge SHA: record after integration into the team default branch
 
 ## Honest status
 
-Sihao's presentation, evaluation, inherited-screen integration seam, and
-offline rehearsal work are implemented and tested. The current repository has
-no Andy/Wenbo/Feiyang branches or shared WolfGuard domain, analyzer, planner,
-applier, or catalog ports. Therefore:
+Sihao's presentation, evaluation, normal basket-route integration, and offline
+rehearsal work are implemented and tested. Andy's M1 and Wenbo's M2 are merged
+into this branch; Feiyang's M3 implementation is not present on any remote
+branch. Therefore:
 
 - the UI is verified against injected fake ports and immutable view data;
-- the full fake-port basket journey is verified offline;
-- `BasketScreen` contains a verified optional WolfGuard panel and safe checkout
-  handoff that preserves the inherited QR destination;
-- the real app exposes a deterministic, clearly labeled offline rehearsal from
-  the basket screen without Firebase or `AppState` dependencies;
-- production injection from `AppState` and the shared WolfGuard implementation
-  remains pending because those team-owned contracts are not present;
-- the final production rehearsal driver cannot use the shared analyzer/planner
-  until those contracts exist;
+- the normal `/basket` route now reads exact-UPCs through inherited
+  `AplService`, snapshots live `AppState`, runs M1, and renders the result;
+- M2 preview and atomic apply are wired through Wenbo's planner/applier, with
+  stale, unsupported, and persistence failures preserved;
+- the real route blocks an unknown basket before QR and preserves inherited QR
+  navigation after a confirmed repair;
+- the default offline rehearsal uses the same M1 analyzer, M2 planner, M2
+  applier, and presentation mapper as the live basket while keeping all state
+  isolated;
+- candidate UI is ready, but production replacement lookup remains pending
+  until Feiyang's `CandidateProvider` implementation merges;
 - the deterministic 60-second operator runbook is committed, but the required
   screenshot/clip has not yet been recorded;
 - M0-WG synthetic fixtures verify the instrument only; participant outcome
   claim is **Not Verified**.
 
-Do not describe this branch alone as connected to the production WolfGuard
-engine. Its inherited-screen seam and offline rehearsal are integrated; its
-live production data adapter is not.
+Describe this branch as production-integrated for M1 analysis, M2 repair, M4
+readiness, safe handoff, and shared-logic rehearsal. Do not claim the M3
+replacement path or the four-milestone team delta is complete yet.
 
 ## Implemented M4 delta
 
@@ -39,22 +42,23 @@ live production data adapter is not.
 | Readiness states | Empty, loading, ready, attention, error; covered/self-paid/blocked/unknown counts; semantic status | Verified |
 | Detailed report | Aggregate counts, stable line keys, item status, issues, evidence, next step, actions | Verified |
 | Repair confirmation | Before/after preview, explicit apply, cancel no-op, repeated-tap lock, stale/unsupported/persistence errors | Verified |
-| Candidate search | Loading, empty, unavailable/retry, exact UPC selection, same-category vs verified package evidence | Verified |
-| Live recalculation | Listens to injected basket changes; rejects stale async results; detaches listener on dispose | Verified with fake source |
-| Safe checkout | Reviewed basket proceeds; risky/error states require review; explicit limitation acknowledgement; cancel no-op | Verified with injected navigation callback |
-| Rehearsal UI | Clearly labeled synthetic, isolated driver, report/repair/apply/retry flow | Verified with fake driver and built-in deterministic fixture |
-| Full journey | Analyze → report → candidate → preview → apply → recalculate → checkout, plus cancel journey | Verified offline E2E |
+| Candidate search UI | Loading, empty, unavailable/retry, exact UPC selection, same-category vs verified package evidence | Verified with fake provider; production M3 pending |
+| Live recalculation | Exact-UPCs through inherited APL, immutable AppState snapshot, M1 analysis, stale async rejection, listener disposal | Verified on production route |
+| Safe checkout | Unknown basket blocked before QR; repaired basket reaches inherited QR; acknowledgement and cancel remain available | Verified on production route |
+| Rehearsal UI | Clearly labeled synthetic; real M1/M2 analyzer/planner/applier; report/preview/apply/retry; AppState isolation | Verified |
+| Full M1/M2/M4 journey | Live AppState → report → preview → atomic apply → recalculate → inherited QR | Verified |
+| Replacement journey | Candidate → replacement preview → apply | Verified with fake provider only; production M3 pending |
 | Inherited BasketScreen/QR wiring | Optional live panel and guarded checkout preserve the existing QR route; omitted integration preserves inherited behavior | Verified |
-| Default app rehearsal entry | Basket-screen shield opens an isolated four-state synthetic scenario and two-action repair flow | Verified |
-| Real AppState/domain adapter | Requires shared M1/M2/M3 contracts | Pending integration |
-| Production shared-logic rehearsal driver | Requires shared analyzer/planner contracts | Pending integration |
+| Default app rehearsal entry | Basket-screen shield opens an isolated four-state scenario using shared M1/M2 logic | Verified |
+| Real AppState/domain adapter | M1 report source and M2 repair coordinator | Verified; M3 callbacks pending |
+| Production shared-logic rehearsal driver | Same M1 analyzer, M2 planner/applier, and mapper as normal basket | Verified |
 
 Feature source is under `Project2/lib/features/wolfguard/presentation/`, with a
-narrow optional composition seam in the inherited `basket_screen.dart`. E2E
-coverage remains isolated under `Project2/test/e2e/` and
-`Project2/integration_test/`. Inherited basket tile and state logic was not
-restructured. No Andy engine/domain, Wenbo repair/state, or Feiyang
-catalog/service file was edited.
+narrow optional composition seam in inherited `basket_screen.dart` and one
+route target change in `app_router.dart`. E2E coverage remains isolated under
+`Project2/test/e2e/` and `Project2/integration_test/`. Inherited basket tile and
+state logic was not restructured. The integration tranche did not edit Andy's
+domain/engine, Wenbo's repair/AppState, or any Feiyang catalog/service file.
 
 ## Flutter verification
 
@@ -62,18 +66,18 @@ Run from `Project2` with Flutter 3.47.2 / Dart 3.13.2.
 
 | Gate | Command | Result |
 | --- | --- | --- |
-| Entire inherited + delta suite | `flutter test --no-pub --coverage --concurrency=1` | **457/457 passed** |
-| Count reconciliation | inherited 377 + new Sihao 80 | **457 total** |
-| M4 presentation + E2E | `flutter test --no-pub test/features/wolfguard/presentation test/e2e/wolfguard_journey_test.dart` | **80/80 passed** |
-| Device-wrapper source scenarios | `flutter test --no-pub test/e2e/wolfguard_journey_test.dart test/features/wolfguard/presentation/wolfguard_basket_screen_integration_test.dart` | **9/9 passed** |
-| Linux integration device launch | `flutter test --no-pub integration_test/wolfguard_demo_test.dart` | **Not run**: container lacks CMake; wrapper includes the 9 verified source scenarios and passes analyzer |
-| Flutter line coverage | generated `coverage/lcov.info` | **93.19%**, 2,971/3,188 lines |
+| Entire inherited + merged delta suite | `flutter test --no-pub --coverage --concurrency=1` | **632/632 passed** |
+| Team count reconciliation | inherited 377 + merged delta 255 | **632 total** |
+| Sihao presentation + E2E | `flutter test --no-pub test/features/wolfguard/presentation test/e2e/wolfguard_journey_test.dart` | **108/108 passed** |
+| Device-wrapper source scenarios | E2E + optional seam + production basket + domain rehearsal source files | **20/20 passed** |
+| Linux integration device launch | `flutter test --no-pub integration_test/wolfguard_demo_test.dart` | **Not run**: container lacks CMake; wrapper includes the 20 verified source scenarios and passes analyzer |
+| Flutter line coverage | generated `coverage/lcov.info` | **92.47%**, 3,957/4,279 lines |
 | Strict analyzer | `flutter analyze --no-pub --fatal-infos --fatal-warnings` | **0 issues** |
-| Formatter | `dart format --output=none --set-exit-if-changed lib test integration_test` | **88 files, 0 changed** |
+| Formatter | `dart format --output=none --set-exit-if-changed lib test integration_test` | **118 files, 0 changed** |
 | Release web build | `flutter build web --release --no-pub` | **PASS**, `build/web` produced |
 
-The new test count exceeds Sihao's minimum of 14. It does not replace the other
-owners' test budgets or the team requirement to retest after merging M1–M3.
+Sihao's 108 presentation/E2E tests exceed the minimum of 14. The merged suite
+also exceeds the team target of 100. A final rerun remains required after M3.
 
 ## M0-WG instrument
 
@@ -149,30 +153,39 @@ messages:
 24. `6abd278` — rehearsal-to-basket isolation acceptance test
 25. `111530a` — explicit package-mismatch evidence scenario
 26. `ffb8741` — deterministic 60-second demo runbook
+27. `c923134` — shared domain-to-UI mapping
+28. `b1c3d06` — live AppState/APL M1 report source
+29. `622ec63` — benefit-origin compatibility in immutable snapshots
+30. `c01e080` — live M2 repair coordinator
+31. `a47812d` — production `/basket` composition
+32. `d3c4b57` — shared-domain rehearsal driver
+33. `9b03d65` — shared-domain rehearsal on the basket route
+34. `c9345a6` — production device-smoke coverage
+35. `a1a6805` — production checkout-handoff acceptance
 
 Evidence-only refresh commits are intentionally omitted from this capability
 list but remain visible in the complete Git history.
 
-At the verified parent, Sihao's delta contains 35 changed files, 5,857
-insertions, and 7 deletions. Merge history, not this count alone, is the
-authoritative grading evidence.
+From shared integration base `d2005dd` through the verified parent, the Sihao
+integration tranche contains 12 changed files, 1,326 insertions, and 5
+deletions. Merge history, not this count alone, is the authoritative grading
+evidence.
 
 ## Required integration handoff
 
-After the other owners merge their frozen contracts and implementations:
+After Feiyang merges the M3 implementation:
 
-1. Implement a narrow production adapter from `AppState` + the shared analyzer
-   into `WolfGuardLiveReportSource` and immutable display snapshots.
-2. Map Wenbo's plan and apply outcomes into the existing repair callbacks.
-3. Map Feiyang's candidates into
+1. Map Feiyang's domain candidates into
    `WolfGuardReplacementCandidateViewData` without losing UPC or inventing
    package evidence.
-4. Inject that adapter and the repair/catalog callbacks through the existing
-   `WolfGuardBasketIntegration` seam in the app route/composition root.
-5. Replace the presentation-only rehearsal driver with isolated synthetic
-   domain fixtures using the same shared analyzer/planner as the real basket.
-6. Add production-adapter tests, rerun all 457 current tests plus the other
-   owners' tests, analyzer, formatter, web build, Python, JavaScript, inherited
-   M0, and M0-WG gates.
-7. Record the merged final SHA and replace every pending status above with
-   evidence only after it actually passes.
+2. Extend `WolfGuardAppStateRepairCoordinator` to pass only the selected M3
+   candidate into Wenbo's planner.
+3. Inject the existing candidate callbacks through
+   `WolfGuardBasketIntegration`; do not restructure `BasketScreen`.
+4. Add M3 production-adapter tests, rerun all 632 current tests plus M3 tests,
+   regenerate coverage, and rerun analyzer, formatter, web build, Python,
+   JavaScript, inherited M0, and M0-WG gates.
+5. Run JavaScript gates in CI or a Node-equipped clone; the current container
+   has no `node`, `nodejs`, or `npm`.
+6. Record the screenshot/clip, merged final SHA, and final evidence only after
+   M3 and the visual artifact actually pass.

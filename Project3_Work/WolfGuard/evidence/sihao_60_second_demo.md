@@ -13,9 +13,10 @@ tooltip is `Try WolfGuard rehearsal`
 - Repair is previewed before apply and updates the rehearsal counts.
 - Returning to Basket leaves the shopper's real basket and balances unchanged.
 
-This path is explicitly labeled `Synthetic sample — not live benefits`. It does
-not prove that the pending production `AppState`/M1–M3 adapter is complete and
-must not be presented as participant M0 evidence.
+This path is explicitly labeled `Synthetic sample — not live benefits`. It
+uses the production M1 analyzer, M2 planner/applier, and M4 mapper/widgets. It
+does not prove that the pending M3 provider is integrated and must not be
+presented as participant M0 evidence.
 
 ## Timed operator script
 
@@ -23,9 +24,9 @@ must not be presented as participant M0 evidence.
 | ---: | --- | --- |
 | 0–6 s | On Basket, point to the existing item, then select the shield icon. | “This begins inside the inherited WolfBite basket.” |
 | 6–13 s | Pause on the rehearsal banner and summary. | Read the synthetic warning; show `Covered 1`, `Self-paid 1`, `Blocked 1`, and `Unknown 1`. |
-| 13–25 s | Select `Review with WolfGuard`; scroll to `Synthetic blocked cereal`. | Show `Synthetic package mismatch`, including 24 oz selected versus 18 oz benefit evidence. |
-| 25–36 s | Select `Preview sample repair`. | Show `Before` and `Projected after`; emphasize that nothing changes before confirmation. |
-| 36–44 s | Select `Apply repairs`. | The rehearsal recalculates to `Covered 2`, `Self-paid 2`, `Blocked 0`, `Unknown 0`. |
+| 13–25 s | Select `Review with WolfGuard`; scroll to `Synthetic blocked cereal`. | Show the package-size mismatch, including 24 oz selected versus 18 oz benefit evidence. |
+| 25–36 s | Select `Preview safe repair`. | Show `Before` and `Projected after`; without M3, the shared planner conservatively keeps both unsafe lines self-paid. |
+| 36–44 s | Select `Apply repairs`. | The rehearsal recalculates to `Covered 1`, `Self-paid 3`, `Blocked 0`, `Unknown 0`. |
 | 44–52 s | Point to `Checkout preflight reviewed`. | “Unknown evidence was kept conservative rather than guessed as covered.” |
 | 52–60 s | Use Back to return to Basket. | Show the same inherited basket item and quantity. “The rehearsal never touched live shopper state.” |
 
@@ -39,13 +40,13 @@ From `Project2/`:
 
 ```sh
 flutter test --no-pub \
-  test/features/wolfguard/presentation/wolfguard_basket_screen_integration_test.dart \
-  test/features/wolfguard/presentation/wolfguard_synthetic_rehearsal_driver_test.dart
+  test/features/wolfguard/presentation/wolfguard_basket_screen_test.dart \
+  test/features/wolfguard/presentation/wolfguard_domain_rehearsal_driver_test.dart
 ```
 
-Expected result: 13 tests pass. The final test completes the repair, returns to
-the inherited Basket, and compares both basket contents and balances with their
-pre-rehearsal snapshots.
+Expected result: 11 tests pass. The production-route rehearsal test completes
+the repair, returns to the inherited Basket, and compares both basket contents
+and balances with their pre-rehearsal snapshots.
 
 For a device-equipped machine, run:
 
@@ -53,8 +54,9 @@ For a device-equipped machine, run:
 flutter test --no-pub integration_test/wolfguard_demo_test.dart -d DEVICE_ID
 ```
 
-The device wrapper includes the two full journey tests and seven inherited
-BasketScreen integration tests. It uses fake or synthetic evidence and does not
+The device wrapper includes 20 verified source scenarios: two full journey
+tests, seven optional-seam tests, five production-basket tests, and six
+shared-domain rehearsal tests. It uses fake or synthetic evidence and does not
 contact production services.
 
 ## Recovery during a tutor demo
