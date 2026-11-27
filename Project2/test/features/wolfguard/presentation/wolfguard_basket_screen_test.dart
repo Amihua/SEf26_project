@@ -2,6 +2,8 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:wolfbite/features/wolfguard/domain/wolfguard_models.dart';
+import 'package:wolfbite/features/wolfguard/domain/wolfguard_ports.dart';
 import 'package:wolfbite/features/wolfguard/presentation/wolfguard_basket_screen.dart';
 import 'package:wolfbite/state/app_state.dart';
 
@@ -36,10 +38,34 @@ _RepairableAppState _state() {
   return state;
 }
 
-Widget _app(AppState state) {
+class _CandidateProvider implements CandidateProvider {
+  BasketLineSnapshot? received;
+
+  @override
+  Future<List<ReplacementCandidate>> findFor({
+    required BasketLineSnapshot line,
+    int max = 5,
+  }) async {
+    received = line;
+    return const [
+      ReplacementCandidate(
+        upc: '222',
+        name: 'Replacement milk',
+        canonicalCategory: 'MILK',
+        aplEligible: true,
+        freshness: EvidenceFreshness.current,
+        evidenceLabel: 'Imported NC APL exact UPC',
+      ),
+    ];
+  }
+}
+
+Widget _app(AppState state, {CandidateProvider? candidateProvider}) {
   return ChangeNotifierProvider<AppState>.value(
     value: state,
-    child: const MaterialApp(home: WolfGuardBasketScreen()),
+    child: MaterialApp(
+      home: WolfGuardBasketScreen(candidateProvider: candidateProvider),
+    ),
   );
 }
 
@@ -110,6 +136,45 @@ void main() {
 
     expect(find.text('Review before checkout'), findsOneWidget);
     expect(find.text('QR Code Checkout'), findsNothing);
+  });
+
+  testWidgets('optional M3 provider reaches replacement preview and apply', (
+    tester,
+  ) async {
+    final state = _state();
+    await state.db.collection('apl').doc('111').set({
+      'upc': '111',
+      'name': 'Ineligible milk',
+      'category': 'MILK',
+      'eligible': false,
+    });
+    await state.db.collection('apl').doc('222').set({
+      'upc': '222',
+      'name': 'Replacement milk',
+      'category': 'MILK',
+      'eligible': true,
+    });
+    final provider = _CandidateProvider();
+    await tester.pumpWidget(_app(state, candidateProvider: provider));
+    await tester.pumpAndSettle();
+
+    await _openRepair(tester);
+    expect(find.text('Replacement milk'), findsOneWidget);
+    expect(find.textContaining('Same benefit category'), findsOneWidget);
+    await tester.tap(find.text('Use in repair preview'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Preview basket repair'), findsOneWidget);
+    expect(find.text('Use eligible replacement'), findsOneWidget);
+    await tester.tap(find.text('Apply repairs'));
+    await tester.pumpAndSettle();
+
+    expect(provider.received?.upc, '111');
+    expect(state.basket.single['upc'], '222');
+    expect(state.basket.single['name'], 'Replacement milk');
+    expect(find.text('Checkout preflight reviewed'), findsOneWidget);
+    await _tapCheckout(tester);
+    expect(find.text('QR Code Checkout'), findsOneWidget);
   });
 
   testWidgets('replacing provider state disposes old live binding', (
