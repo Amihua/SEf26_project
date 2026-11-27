@@ -37,6 +37,32 @@ class _RecordingApplier implements FixPlanApplier {
   }
 }
 
+class _CandidateProvider implements CandidateProvider {
+  _CandidateProvider(this.response);
+
+  final Future<List<ReplacementCandidate>> Function(BasketLineSnapshot line)
+  response;
+  BasketLineSnapshot? received;
+
+  @override
+  Future<List<ReplacementCandidate>> findFor({
+    required BasketLineSnapshot line,
+    int max = 5,
+  }) async {
+    received = line;
+    return response(line);
+  }
+}
+
+const _replacement = ReplacementCandidate(
+  upc: '222',
+  name: 'Known replacement milk',
+  canonicalCategory: 'MILK',
+  aplEligible: true,
+  freshness: EvidenceFreshness.current,
+  evidenceLabel: 'Imported NC APL exact UPC',
+);
+
 _RepairableAppState _unknownState() {
   final state = _RepairableAppState();
   state.balances['MILK'] = {'allowed': 2, 'used': 1};
@@ -51,16 +77,16 @@ _RepairableAppState _unknownState() {
 
 Future<(WolfGuardAppStateReportSource, WolfGuardReportViewData)> _analyze(
   AppState state, {
-  bool eligible = false,
+  bool? eligibility,
 }) async {
   final source = WolfGuardAppStateReportSource(
     state: state,
-    aplLookup: (_) async => eligible
+    aplLookup: (_) async => eligibility != null
         ? {
             'upc': '111',
             'name': 'Known milk',
             'category': 'MILK',
-            'eligible': true,
+            'eligible': eligibility,
           }
         : null,
     now: () => DateTime.utc(2026, 11, 27),
@@ -153,9 +179,98 @@ void main() {
   });
 
   test('covered line does not invent a repair plan', () async {
-    final (source, report) = await _analyze(_unknownState(), eligible: true);
+    final (source, report) = await _analyze(_unknownState(), eligibility: true);
     final coordinator = WolfGuardAppStateRepairCoordinator(source: source);
 
     expect(await coordinator.prepare(report.lines.single), isNull);
   });
+
+  test('M3 candidate identity is preserved through the M2 preview', () async {
+    final state = _unknownState();
+    final (source, report) = await _analyze(state, eligibility: false);
+    final provider = _CandidateProvider((_) async => const [_replacement]);
+    final applier = _RecordingApplier(ApplyPlanResult.applied);
+    final coordinator = WolfGuardAppStateRepairCoordinator(
+      source: source,
+      candidateProvider: provider,
+      applier: applier,
+    );
+
+    final candidates = await coordinator.loadCandidates(report.lines.single);
+    final plan = await coordinator.prepareReplacement(
+      report.lines.single,
+      candidates.single,
+    );
+    final outcome = await coordinator.apply(plan!.planId);
+
+    expect(coordinator.supportsCandidates, isTrue);
+    expect(provider.received?.lineKey, report.lines.single.lineKey);
+    expect(candidates.single.upc, '222');
+    expect(plan.actions.single.title, 'Use eligible replacement');
+    expect(outcome, WolfGuardApplyViewOutcome.applied);
+    expect(applier.received?.actions.single.replacement, same(_replacement));
+  });
+
+  test(
+    'candidate source failure propagates for retry without a fake',
+    () async {
+      final (source, report) = await _analyze(_unknownState());
+      final coordinator = WolfGuardAppStateRepairCoordinator(
+        source: source,
+        candidateProvider: _CandidateProvider(
+          (_) async => throw StateError('catalog offline'),
+        ),
+      );
+
+      await expectLater(
+        coordinator.loadCandidates(report.lines.single),
+        throwsA(isA<StateError>()),
+      );
+    },
+  );
+
+  test('unknown or stale candidate selection cannot create a plan', () async {
+    final state = _unknownState();
+    final (source, report) = await _analyze(state);
+    final coordinator = WolfGuardAppStateRepairCoordinator(
+      source: source,
+      candidateProvider: _CandidateProvider((_) async => const [_replacement]),
+    );
+    final candidates = await coordinator.loadCandidates(report.lines.single);
+    const unknown = WolfGuardReplacementCandidateViewData(
+      upc: 'not-returned',
+      name: 'Invented',
+      canonicalCategory: 'MILK',
+      evidenceLabel: 'not provider evidence',
+      packageMatch: WolfGuardPackageMatchView.unknown,
+    );
+
+    expect(
+      await coordinator.prepareReplacement(report.lines.single, unknown),
+      isNull,
+    );
+
+    state.basket.single['qty'] = 2;
+    expect(
+      await coordinator.prepareReplacement(
+        report.lines.single,
+        candidates.single,
+      ),
+      isNull,
+    );
+  });
+
+  test(
+    'missing M3 provider is unavailable rather than an empty result',
+    () async {
+      final (source, report) = await _analyze(_unknownState());
+      final coordinator = WolfGuardAppStateRepairCoordinator(source: source);
+
+      expect(coordinator.supportsCandidates, isFalse);
+      await expectLater(
+        coordinator.loadCandidates(report.lines.single),
+        throwsA(isA<StateError>()),
+      );
+    },
+  );
 }
