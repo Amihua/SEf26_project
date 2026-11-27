@@ -117,11 +117,13 @@ completed with **13/13 passed**. This result remains separate from M0-WG.
 | `.github/scripts` Python tests | **11/11 passed** |
 | Project2 APL Python tests | **13/13 passed** using locked `openpyxl==3.1.5` from `requirements-apl.txt` in a `/tmp` target |
 | Firebase configuration consistency | **PASS**; CLI, FlutterFire metadata, and five platform configs agree on `wolfbyte-proj1` |
-| JavaScript tests | **Not run in this environment**: `node`, `nodejs`, and `npm` are unavailable |
+| JavaScript tests | `node --test scripts/test_enrich_nutrition_off.cjs scripts/test_import.cjs` — **16/16 passed** |
+| JavaScript LCOV summary | `node scripts/coverage_summary.cjs coverage/lcov.info` — **4,043/4,354 (92.9%)** |
 
-The missing Node runtime is an environment limitation, not a passing result.
-Run the repository JavaScript gates in CI or a Node-equipped clean clone before
-final release.
+The container had no system Node runtime, so these gates used the official
+Node.js 24.22.3 Linux x64 archive extracted under `/tmp`. Its archive SHA-256
+was verified against the release's official `SHASUMS256.txt` before execution;
+no repository dependencies were installed or changed.
 
 ## Auditable commit sequence
 
@@ -188,7 +190,5 @@ After Feiyang merges the M3 implementation:
 3. Rerun all 640 current tests plus M3 tests,
    regenerate coverage, and rerun analyzer, formatter, web build, Python,
    JavaScript, inherited M0, and M0-WG gates.
-4. Run JavaScript gates in CI or a Node-equipped clone; the current container
-   has no `node`, `nodejs`, or `npm`.
-5. Record the screenshot/clip, merged final SHA, and final evidence only after
+4. Record the screenshot/clip, merged final SHA, and final evidence only after
    M3 and the visual artifact actually pass.
