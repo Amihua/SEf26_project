@@ -49,9 +49,7 @@ class WolfGuardAppStateReportSource implements WolfGuardLiveReportSource {
 
   @override
   Future<WolfGuardReportViewData> analyze() async {
-    final basket = [
-      for (final item in state.basket) Map<String, Object?>.from(item),
-    ];
+    final basket = _snapshotBasket();
     final balances = {
       for (final entry in state.balances.entries)
         entry.key: Map<String, Object?>.from(entry.value),
@@ -79,9 +77,7 @@ class WolfGuardAppStateReportSource implements WolfGuardLiveReportSource {
   /// catalog facts.
   PreflightRequest snapshotWithLatestEvidence() {
     return PreflightRequestBuilder.fromAppState(
-      basket: [
-        for (final item in state.basket) Map<String, Object?>.from(item),
-      ],
+      basket: _snapshotBasket(),
       balances: {
         for (final entry in state.balances.entries)
           entry.key: Map<String, Object?>.from(entry.value),
@@ -89,6 +85,31 @@ class WolfGuardAppStateReportSource implements WolfGuardLiveReportSource {
       evaluatedAt: _now(),
       evidenceByUpc: _latestEvidence,
     );
+  }
+
+  List<Map<String, Object?>> _snapshotBasket() {
+    return [
+      for (final item in state.basket)
+        _lineWithExplicitBenefitOrigin(Map<String, Object?>.from(item)),
+    ];
+  }
+
+  /// M2 carries a benefit line's origin onto a projected PAID line.
+  ///
+  /// Inherited state stores `original_benefit_category` only after a line has
+  /// already moved to PAID. For an ordinary benefit line its current category
+  /// is, by definition, the origin. Adding it to this immutable snapshot keeps
+  /// M2's preview consistent with its applier without changing AppState data.
+  Map<String, Object?> _lineWithExplicitBenefitOrigin(
+    Map<String, Object?> line,
+  ) {
+    final category = line['category'];
+    if (category is String &&
+        category.trim().toUpperCase() != wolfGuardPaidCategory &&
+        line['original_benefit_category'] == null) {
+      line['original_benefit_category'] = category;
+    }
+    return line;
   }
 
   Future<Map<String, ProductEvidence>> _loadEvidence(

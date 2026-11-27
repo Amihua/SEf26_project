@@ -40,7 +40,12 @@ void main() {
     expect(report.lines.single.productName, 'Test milk');
     expect(report.lines.single.status, WolfGuardLineStatus.covered);
     expect(source.latestRequest?.lines.single.evidence?.aplEligible, isTrue);
+    expect(source.latestRequest?.lines.single.originalBenefitCategory, 'MILK');
     expect(source.latestReport?.coveredUnits, 1);
+    expect(
+      state.basket.single.containsKey('original_benefit_category'),
+      isFalse,
+    );
   });
 
   test('duplicate basket UPC is looked up once per analysis', () async {
