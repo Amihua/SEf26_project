@@ -52,6 +52,14 @@ Future<void> _openRepair(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _tapCheckout(WidgetTester tester) async {
+  final checkout = find.text('Ready to Checkout');
+  await tester.ensureVisible(checkout);
+  await tester.pump();
+  await tester.tap(checkout);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets('production wrapper shows real M1 report in inherited basket', (
     tester,
@@ -86,6 +94,22 @@ void main() {
     expect(find.text('Checkout preflight reviewed'), findsOneWidget);
     expect(find.text('Self-paid 1'), findsOneWidget);
     expect(find.text('Unknown 0'), findsOneWidget);
+
+    await _tapCheckout(tester);
+    expect(find.text('QR Code Checkout'), findsOneWidget);
+    expect(find.text('Finish Transaction'), findsOneWidget);
+  });
+
+  testWidgets('production route blocks unknown basket before QR', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app(_state()));
+    await tester.pumpAndSettle();
+
+    await _tapCheckout(tester);
+
+    expect(find.text('Review before checkout'), findsOneWidget);
+    expect(find.text('QR Code Checkout'), findsNothing);
   });
 
   testWidgets('replacing provider state disposes old live binding', (
