@@ -1,4 +1,5 @@
 import '../domain/wolfguard_models.dart';
+import '../engine/preflight_rules.dart';
 import 'wolfguard_display_models.dart';
 
 /// Maps the shared WolfGuard domain into immutable presentation data.
@@ -62,6 +63,50 @@ abstract final class WolfGuardDomainMapper {
         WolfGuardApplyViewOutcome.persistenceFailed,
     };
   }
+
+  /// Maps one M3 catalog candidate without overstating package evidence.
+  ///
+  /// A candidate is shown as a verified package match only when both explicit
+  /// sizes exist and the shared M1 package rule says they match. A known but
+  /// different or non-comparable size remains an ordinary same-category
+  /// candidate; the UI never infers a match from its name or UPC.
+  static WolfGuardReplacementCandidateViewData candidate(
+    ReplacementCandidate candidate, {
+    required PackageAmount? permittedPackageSize,
+  }) {
+    final offered = candidate.verifiedPackageSize;
+    final packageVerified =
+        offered != null &&
+        permittedPackageSize != null &&
+        PackageRules.compare(offered, permittedPackageSize) ==
+            PackageComparison.match;
+
+    return WolfGuardReplacementCandidateViewData(
+      upc: candidate.upc,
+      name: candidate.name,
+      canonicalCategory: candidate.canonicalCategory,
+      evidenceLabel: candidate.evidenceLabel,
+      packageMatch: packageVerified
+          ? WolfGuardPackageMatchView.verified
+          : WolfGuardPackageMatchView.unknown,
+      packageEvidenceLabel: packageVerified
+          ? '${offered.toString()} explicit package evidence'
+          : null,
+    );
+  }
+
+  /// Maps M3 results in provider order and returns an immutable collection.
+  static List<WolfGuardReplacementCandidateViewData> candidates(
+    Iterable<ReplacementCandidate> candidates, {
+    required PackageAmount? permittedPackageSize,
+  }) => List.unmodifiable(
+    candidates.map(
+      (candidate) => WolfGuardDomainMapper.candidate(
+        candidate,
+        permittedPackageSize: permittedPackageSize,
+      ),
+    ),
+  );
 
   static WolfGuardLineViewData _line(
     LinePreflightResult result,

@@ -148,4 +148,80 @@ void main() {
       WolfGuardApplyViewOutcome.values,
     );
   });
+
+  test('candidate mapping preserves exact M3 identity and evidence', () {
+    const candidate = ReplacementCandidate(
+      upc: '001234500067',
+      name: 'Whole Grain Cereal',
+      canonicalCategory: 'BREAKFAST CEREAL',
+      aplEligible: true,
+      verifiedPackageSize: PackageAmount(18, 'oz'),
+      freshness: EvidenceFreshness.current,
+      evidenceLabel: 'Imported NC APL exact UPC',
+    );
+
+    final view = WolfGuardDomainMapper.candidate(
+      candidate,
+      permittedPackageSize: const PackageAmount(18.0, ' OZ '),
+    );
+
+    expect(view.upc, '001234500067');
+    expect(view.name, 'Whole Grain Cereal');
+    expect(view.canonicalCategory, 'BREAKFAST CEREAL');
+    expect(view.evidenceLabel, 'Imported NC APL exact UPC');
+    expect(view.packageMatch, WolfGuardPackageMatchView.verified);
+    expect(view.packageEvidenceLabel, '18 oz explicit package evidence');
+  });
+
+  test('candidate mapping never promotes unsafe package evidence', () {
+    const base = ReplacementCandidate(
+      upc: '900',
+      name: 'Candidate',
+      canonicalCategory: 'BREAKFAST CEREAL',
+      aplEligible: true,
+      verifiedPackageSize: PackageAmount(24, 'oz'),
+      freshness: EvidenceFreshness.current,
+      evidenceLabel: 'Imported NC APL',
+    );
+
+    for (final permitted in <PackageAmount?>[
+      null,
+      const PackageAmount(18, 'oz'),
+      const PackageAmount(24, 'g'),
+    ]) {
+      final view = WolfGuardDomainMapper.candidate(
+        base,
+        permittedPackageSize: permitted,
+      );
+      expect(view.packageMatch, WolfGuardPackageMatchView.unknown);
+      expect(view.packageEvidenceLabel, isNull);
+    }
+  });
+
+  test('candidate collection keeps provider order and is immutable', () {
+    const first = ReplacementCandidate(
+      upc: '001',
+      name: 'First',
+      canonicalCategory: 'MILK',
+      aplEligible: true,
+      freshness: EvidenceFreshness.current,
+      evidenceLabel: 'first evidence',
+    );
+    const second = ReplacementCandidate(
+      upc: '002',
+      name: 'Second',
+      canonicalCategory: 'MILK',
+      aplEligible: true,
+      freshness: EvidenceFreshness.current,
+      evidenceLabel: 'second evidence',
+    );
+
+    final views = WolfGuardDomainMapper.candidates(const [
+      first,
+      second,
+    ], permittedPackageSize: null);
+
+    expect(views.map((candidate) => candidate.upc), ['001', '002']);
+    expect(() => views.add(views.first), throwsUnsupportedError);
+  });
 }
