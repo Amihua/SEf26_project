@@ -6,6 +6,7 @@ import '../../../state/app_state.dart';
 import 'wolfguard_app_state_repair_coordinator.dart';
 import 'wolfguard_app_state_report_source.dart';
 import 'wolfguard_basket_integration.dart';
+import 'wolfguard_domain_rehearsal_driver.dart';
 import 'wolfguard_live_controller.dart';
 
 /// Composes production WolfGuard dependencies around the inherited basket.
@@ -41,6 +42,7 @@ class _WolfGuardBasketScreenState extends State<WolfGuardBasketScreen> {
       controller: controller,
       onPrepareFix: repair.prepare,
       onApplyFix: repair.apply,
+      rehearsalDriver: WolfGuardDomainRehearsalDriver(),
     );
   }
 

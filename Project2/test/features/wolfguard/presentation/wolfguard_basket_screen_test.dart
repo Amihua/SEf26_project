@@ -105,4 +105,55 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Second basket milk'), findsOneWidget);
   });
+
+  testWidgets('route rehearsal uses domain logic without changing AppState', (
+    tester,
+  ) async {
+    final state = _state();
+    final basketBefore = state.basket
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+    final balancesBefore = state.balances.map(
+      (category, balance) =>
+          MapEntry(category, Map<String, dynamic>.from(balance)),
+    );
+    await tester.pumpWidget(_app(state));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Try WolfGuard rehearsal'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Synthetic sample'), findsOneWidget);
+    expect(find.text('Covered 1'), findsOneWidget);
+    expect(find.text('Self-paid 1'), findsOneWidget);
+    expect(find.text('Blocked 1'), findsOneWidget);
+    expect(find.text('Unknown 1'), findsOneWidget);
+
+    await tester.tap(find.text('Review with WolfGuard'));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, -500));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Preview safe repair').hitTestable());
+    await tester.pumpAndSettle();
+    expect(find.text('Keep item self-paid'), findsNWidgets(2));
+    await tester.scrollUntilVisible(
+      find.text('Apply repairs'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Apply repairs'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Checkout preflight reviewed'), findsOneWidget);
+    expect(find.text('Covered 1'), findsOneWidget);
+    expect(find.text('Self-paid 3'), findsOneWidget);
+    expect(find.text('Blocked 0'), findsOneWidget);
+    expect(find.text('Unknown 0'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    expect(find.text('My Basket'), findsOneWidget);
+    expect(state.basket, basketBefore);
+    expect(state.balances, balancesBefore);
+  });
 }
