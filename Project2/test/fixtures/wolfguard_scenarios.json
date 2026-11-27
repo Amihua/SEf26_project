@@ -1,0 +1,272 @@
+{
+  "schema": "wolfguard-scenarios-v1",
+  "label": "Synthetic sample; not live benefits.",
+  "notes": [
+    "Hand-authored synthetic rehearsal data. UPCs, names, allowances, and package sizes are invented and are not NC APL or eWIC records.",
+    "benefits[].used counts units consumed outside the basket (earlier checkouts), matching BenefitCategorySnapshot.used.",
+    "Package sizes are explicit synthetic evidence. Live APL accounting units are never used as package sizes.",
+    "WG-S1 and WG-S2 are the M0-WG trial scenarios. Their oracle lists the blocked issues a participant must resolve and the unknown lines they must acknowledge."
+  ],
+  "scenarios": [
+    {
+      "id": "WG-S1",
+      "use": "m0-trial",
+      "title": "Over-allowance milk, unverified juice, self-paid eggs",
+      "benefits": {
+        "MILK - WHOLE": { "allowed": 3, "used": 1, "freshness": "current" },
+        "BREAKFAST CEREAL": { "allowed": 2, "used": 0, "freshness": "current" },
+        "JUICE 64": { "allowed": 1, "used": 0, "freshness": "current" }
+      },
+      "lines": [
+        {
+          "lineKey": "s1-milk",
+          "upc": "000000000101",
+          "name": "Synthetic whole milk",
+          "basketCategory": "MILK - WHOLE",
+          "originalBenefitCategory": "MILK - WHOLE",
+          "quantity": 3,
+          "evidence": { "aplEligible": true, "canonicalCategory": "MILK - WHOLE", "freshness": "current", "sourceLabel": "Synthetic APL fixture" }
+        },
+        {
+          "lineKey": "s1-cereal",
+          "upc": "000000000102",
+          "name": "Synthetic oat cereal",
+          "basketCategory": "BREAKFAST CEREAL",
+          "originalBenefitCategory": "BREAKFAST CEREAL",
+          "quantity": 1,
+          "evidence": { "aplEligible": true, "canonicalCategory": "BREAKFAST CEREAL", "freshness": "current", "sourceLabel": "Synthetic APL fixture" }
+        },
+        {
+          "lineKey": "s1-juice",
+          "upc": "000000000103",
+          "name": "Synthetic apple juice",
+          "basketCategory": "JUICE 64",
+          "originalBenefitCategory": "JUICE 64",
+          "quantity": 1,
+          "evidence": { "aplEligible": true, "canonicalCategory": "JUICE 64", "freshness": "stale", "sourceLabel": "Synthetic APL fixture (stale)" }
+        },
+        {
+          "lineKey": "s1-eggs-paid",
+          "upc": "000000000104",
+          "name": "Synthetic large eggs",
+          "basketCategory": "PAID",
+          "originalBenefitCategory": "EGGS",
+          "quantity": 1
+        }
+      ],
+      "expected": {
+        "totalUnits": 6,
+        "coveredUnits": 3,
+        "selfPayUnits": 1,
+        "blockedUnits": 1,
+        "unknownUnits": 1,
+        "readyForHandoff": false,
+        "lineStatus": {
+          "s1-milk": "blocked",
+          "s1-cereal": "covered",
+          "s1-juice": "unknown",
+          "s1-eggs-paid": "selfPay"
+        },
+        "issueCodes": {
+          "s1-milk": ["allowanceExceeded"],
+          "s1-juice": ["staleEvidence"],
+          "s1-eggs-paid": ["allowanceExceeded"]
+        }
+      },
+      "oracle": {
+        "actionableIssues": [
+          { "lineKey": "s1-milk", "code": "allowanceExceeded", "acceptableRepairs": ["reduceQuantity", "keepAsSelfPay", "removeLine"] }
+        ],
+        "unknownRequiringReview": ["s1-juice"]
+      }
+    },
+    {
+      "id": "WG-S2",
+      "use": "m0-trial",
+      "title": "Package mismatch, ineligible yogurt, cheese without catalog evidence",
+      "benefits": {
+        "BREAKFAST CEREAL": { "allowed": 2, "used": 0, "freshness": "current", "permittedPackageSize": { "value": 18, "unit": "oz" } },
+        "YOGURT": { "allowed": 2, "used": 0, "freshness": "current" },
+        "CHEESE": { "allowed": 1, "used": 0, "freshness": "current" },
+        "MILK - FAT REDUCED": { "allowed": 3, "used": 0, "freshness": "current" }
+      },
+      "lines": [
+        {
+          "lineKey": "s2-cereal",
+          "upc": "000000000201",
+          "name": "Synthetic corn flakes 24 oz",
+          "basketCategory": "BREAKFAST CEREAL",
+          "originalBenefitCategory": "BREAKFAST CEREAL",
+          "quantity": 1,
+          "evidence": { "aplEligible": true, "canonicalCategory": "BREAKFAST CEREAL", "packageSize": { "value": 24, "unit": "oz" }, "freshness": "current", "sourceLabel": "Synthetic package evidence" }
+        },
+        {
+          "lineKey": "s2-yogurt",
+          "upc": "000000000202",
+          "name": "Synthetic dessert yogurt",
+          "basketCategory": "YOGURT",
+          "originalBenefitCategory": "YOGURT",
+          "quantity": 1,
+          "evidence": { "aplEligible": false, "canonicalCategory": "YOGURT", "freshness": "current", "sourceLabel": "Synthetic APL fixture" }
+        },
+        {
+          "lineKey": "s2-cheese",
+          "upc": "000000000203",
+          "name": "Synthetic cheddar",
+          "basketCategory": "CHEESE",
+          "originalBenefitCategory": "CHEESE",
+          "quantity": 1
+        },
+        {
+          "lineKey": "s2-milk",
+          "upc": "000000000204",
+          "name": "Synthetic 2% milk",
+          "basketCategory": "MILK - FAT REDUCED",
+          "originalBenefitCategory": "MILK - FAT REDUCED",
+          "quantity": 2,
+          "evidence": { "aplEligible": true, "canonicalCategory": "MILK - FAT REDUCED", "freshness": "current", "sourceLabel": "Synthetic APL fixture" }
+        }
+      ],
+      "expected": {
+        "totalUnits": 5,
+        "coveredUnits": 2,
+        "selfPayUnits": 0,
+        "blockedUnits": 2,
+        "unknownUnits": 1,
+        "readyForHandoff": false,
+        "lineStatus": {
+          "s2-cereal": "blocked",
+          "s2-yogurt": "blocked",
+          "s2-cheese": "unknown",
+          "s2-milk": "covered"
+        },
+        "issueCodes": {
+          "s2-cereal": ["packageMismatch"],
+          "s2-yogurt": ["notInCurrentBenefits"],
+          "s2-cheese": ["insufficientEvidence"]
+        }
+      },
+      "oracle": {
+        "actionableIssues": [
+          { "lineKey": "s2-cereal", "code": "packageMismatch", "acceptableRepairs": ["replaceProduct", "keepAsSelfPay", "removeLine"] },
+          { "lineKey": "s2-yogurt", "code": "notInCurrentBenefits", "acceptableRepairs": ["keepAsSelfPay", "removeLine", "replaceProduct"] }
+        ],
+        "unknownRequiringReview": ["s2-cheese"]
+      }
+    },
+    {
+      "id": "WG-E1",
+      "use": "engine",
+      "title": "Live-style overflow: three covered milks plus one PAID milk",
+      "benefits": {
+        "MILK - WHOLE": { "allowed": 3, "used": 0, "freshness": "current" }
+      },
+      "lines": [
+        {
+          "lineKey": "e1-milk",
+          "upc": "000000000301",
+          "name": "Synthetic whole milk",
+          "basketCategory": "MILK - WHOLE",
+          "originalBenefitCategory": "MILK - WHOLE",
+          "quantity": 3,
+          "evidence": { "aplEligible": true, "canonicalCategory": "MILK - WHOLE", "freshness": "current", "sourceLabel": "Synthetic APL fixture" }
+        },
+        {
+          "lineKey": "e1-milk-paid",
+          "upc": "000000000301",
+          "name": "Synthetic whole milk",
+          "basketCategory": "PAID",
+          "originalBenefitCategory": "MILK - WHOLE",
+          "quantity": 1
+        }
+      ],
+      "expected": {
+        "totalUnits": 4,
+        "coveredUnits": 3,
+        "selfPayUnits": 1,
+        "blockedUnits": 0,
+        "unknownUnits": 0,
+        "readyForHandoff": true,
+        "lineStatus": { "e1-milk": "covered", "e1-milk-paid": "selfPay" },
+        "issueCodes": { "e1-milk-paid": ["allowanceExceeded"] }
+      }
+    },
+    {
+      "id": "WG-E2",
+      "use": "engine",
+      "title": "Prototype-uncapped fruit and vegetable benefit",
+      "benefits": {
+        "FRUIT & VEGETABLE CVB": { "allowed": null, "used": 0, "freshness": "current" }
+      },
+      "lines": [
+        {
+          "lineKey": "e2-bananas",
+          "upc": "000000000401",
+          "name": "Synthetic bananas",
+          "basketCategory": "FRUIT & VEGETABLE CVB",
+          "originalBenefitCategory": "FRUIT & VEGETABLE CVB",
+          "quantity": 6,
+          "evidence": { "aplEligible": true, "canonicalCategory": "FRUIT & VEGETABLE CVB", "freshness": "current", "sourceLabel": "Synthetic APL fixture" }
+        }
+      ],
+      "expected": {
+        "totalUnits": 6,
+        "coveredUnits": 6,
+        "selfPayUnits": 0,
+        "blockedUnits": 0,
+        "unknownUnits": 0,
+        "readyForHandoff": true,
+        "lineStatus": { "e2-bananas": "covered" },
+        "issueCodes": {}
+      }
+    },
+    {
+      "id": "WG-E3",
+      "use": "engine",
+      "title": "Inherited allowance counter over its cap",
+      "benefits": {
+        "CHEESE": { "allowed": 1, "used": 2, "freshness": "current" }
+      },
+      "lines": [
+        {
+          "lineKey": "e3-cheese",
+          "upc": "000000000501",
+          "name": "Synthetic mozzarella",
+          "basketCategory": "CHEESE",
+          "originalBenefitCategory": "CHEESE",
+          "quantity": 1,
+          "evidence": { "aplEligible": true, "canonicalCategory": "CHEESE", "freshness": "current", "sourceLabel": "Synthetic APL fixture" }
+        }
+      ],
+      "expected": {
+        "totalUnits": 1,
+        "coveredUnits": 0,
+        "selfPayUnits": 0,
+        "blockedUnits": 0,
+        "unknownUnits": 1,
+        "readyForHandoff": false,
+        "lineStatus": { "e3-cheese": "unknown" },
+        "issueCodes": { "e3-cheese": ["contradictoryEvidence"] }
+      }
+    },
+    {
+      "id": "WG-E4",
+      "use": "engine",
+      "title": "Empty basket",
+      "benefits": {
+        "MILK - WHOLE": { "allowed": 3, "used": 0, "freshness": "current" }
+      },
+      "lines": [],
+      "expected": {
+        "totalUnits": 0,
+        "coveredUnits": 0,
+        "selfPayUnits": 0,
+        "blockedUnits": 0,
+        "unknownUnits": 0,
+        "readyForHandoff": false,
+        "lineStatus": {},
+        "issueCodes": {}
+      }
+    }
+  ]
+}
