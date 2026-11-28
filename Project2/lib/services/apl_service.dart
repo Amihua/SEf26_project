@@ -350,6 +350,83 @@ class AplService {
     return results;
   }
 
+  /// Eligible APL records in exactly one canonical benefit category, for
+  /// WolfGuard's evidence-safe replacement search (Project 3, M3).
+  ///
+  /// The NC APL `category` text has spelling variants, but its two-digit
+  /// `categoryCode` is consistent. When [canonicalCategory] has a known code,
+  /// records are read by that code; records stored under the canonical label
+  /// itself are read too, so a record without a code is not missed. Every
+  /// record is then re-checked here: it must be `eligible == true` (a real
+  /// Boolean) and its own category must canonicalize to [canonicalCategory].
+  ///
+  /// Each result is a copy of the APL document with `upc` set to the
+  /// Firestore document ID and `category` set to the canonical name; the
+  /// APL's own label is kept in `sourceCategory`. A record whose stored `upc`
+  /// field disagrees with its document ID is contradictory and is skipped.
+  /// Results are unique by UPC, never include [excludeUpc], keep Firestore
+  /// order (code query first), and are capped at [max]. Nothing is inferred:
+  /// the APL `unitOfMeasure` is returned as stored and is not a package size.
+  ///
+  /// A blank category or a nonpositive [max] returns an empty list without a
+  /// query. Firestore errors propagate so the caller can offer Retry. This
+  /// method is read-only and performs no basket or balance mutation.
+  Future<List<Map<String, dynamic>>> eligibleReplacements(
+    String canonicalCategory, {
+    String? excludeUpc,
+    int max = 5,
+  }) async {
+    final target = WicCategories.canonical(canonicalCategory);
+    if (target.isEmpty || max <= 0) return [];
+    final code = WicCategories.nameByCode.entries
+        .where((e) => e.value == target)
+        .map((e) => e.key)
+        .firstOrNull;
+
+    // Read a little more than requested: some records are filtered below.
+    final fetch = (max * 4).clamp(max, 50);
+    final apl = _db.collection('apl');
+    final snapshots = [
+      if (code != null)
+        await apl
+            .where('categoryCode', isEqualTo: code)
+            .where('eligible', isEqualTo: true)
+            .limit(fetch)
+            .get(),
+      await apl
+          .where('category', isEqualTo: target)
+          .where('eligible', isEqualTo: true)
+          .limit(fetch)
+          .get(),
+    ];
+
+    final byUpc = <String, Map<String, dynamic>>{};
+    for (final snapshot in snapshots) {
+      for (final doc in snapshot.docs) {
+        final upc = doc.id;
+        if (upc.trim().isEmpty || upc == excludeUpc) continue;
+        if (byUpc.containsKey(upc)) continue;
+        final data = doc.data();
+        if (data['eligible'] != true) continue;
+        final storedUpc = data['upc'];
+        if (storedUpc != null && storedUpc.toString() != upc) continue;
+        final category = WicCategories.canonical(
+          data['category'],
+          code: data['categoryCode'],
+        );
+        if (category != target) continue;
+        byUpc[upc] = {
+          ...data,
+          'upc': upc,
+          'sourceCategory': data['category'],
+          'category': category,
+        };
+        if (byUpc.length == max) return byUpc.values.toList();
+      }
+    }
+    return byUpc.values.toList();
+  }
+
   /// Eligible same-category products for the M2 basket balance check.
   ///
   /// Each result is `{upc, name, category, eligible, nutrition}` with the M1
