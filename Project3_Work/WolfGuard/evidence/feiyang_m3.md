@@ -152,12 +152,32 @@ WolfGuard binding in `WolfGuardBasketScreen.didUpdateWidget`.
 
 ## Remaining before M3 is done
 
-1. Sihao merges the wiring diff above (or an equivalent).
+1. Sihao approves the wiring commit `062cca9` in PR #5 (an ownership
+   exception, since `app_router.dart` is Sihao-owned), or replaces it.
 2. Record a screenshot or clip of a live candidate with its evidence label.
 3. Merge to the team default branch and record the merge SHA here.
-4. Not yet verified against live Firestore: all M3 evidence above uses fake
-   Firestore. Before the demo, run one signed-in replacement search against
-   the real `apl` collection (as `scripts/verify_apl_access.cjs` does for the
-   inherited substitute query) and confirm that the security rules allow the
-   `categoryCode` + `eligible` query. If the live query fails, the UI shows
-   Retry. It never shows a fabricated recommendation.
+
+## Live Firestore check (2026-11-27)
+
+Run against `wolfbyte-proj1` using the `scripts/verify_apl_access.cjs`
+pattern: a temporary `@example.invalid` account with a random password (never
+printed or stored), read-only REST `runQuery` calls, then account deletion
+(confirmed deleted). Each query used `limit: 20`.
+
+| Query (`&& eligible == true`) | Result |
+| --- | --- |
+| `categoryCode == "51"` (MILK - WHOLE) | 20 records (limit reached), label `MILK - WHOLE`, unit `GAL` |
+| `category == "MILK - WHOLE"` | 20 records (limit reached), same products as the code query |
+| `categoryCode == "02"` (CHEESE) | 20 records (limit reached), label `CHEESE`, unit `LB` |
+| `categoryCode == "05"` (BREAKFAST CEREAL) | 20 records (limit reached), label `BREAKFAST CEREAL`, unit `OZ` |
+
+- Security rules allow both M3 queries for a signed-in user; neither needed
+  an extra index.
+- Every returned record had Boolean `eligible: true` and a stored `upc` equal
+  to its document ID, with leading zeros preserved (e.g. `0077890608500`).
+- `unitOfMeasure` holds only unit labels, never an amount, which confirms that
+  M3 must not derive a package size from it.
+- Limits: the live sample showed no spelling variants (the code and label
+  queries returned the same products), so variant handling is covered only by
+  the fake-Firestore tests. This check called the REST API directly; an
+  in-app screenshot or clip is still outstanding.
