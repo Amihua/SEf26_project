@@ -6,7 +6,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wolfbite/screens/login_screen.dart';
 import 'package:wolfbite/screens/signup_page.dart';
 
+import 'package:provider/provider.dart';
+
+import 'features/wolfguard/catalog/apl_candidate_provider.dart';
+import 'features/wolfguard/domain/wolfguard_ports.dart';
 import 'features/wolfguard/presentation/wolfguard_basket_screen.dart';
+import 'state/app_state.dart';
 import 'screens/scan_screen.dart';
 import 'screens/balances_screen.dart';
 import 'screens/receipt_scanner_screen.dart';
@@ -113,8 +118,13 @@ final GoRouter router = GoRouter(
         // - Quick access to basket summary
         GoRoute(
           path: '/basket',
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: WolfGuardBasketScreen()),
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: WolfGuardBasketScreen(
+              candidateProvider: _wolfGuardCandidatesFor(
+                context.read<AppState>(),
+              ),
+            ),
+          ),
         ),
 
         // WIC benefit balance display screen.
@@ -319,3 +329,10 @@ class _MainShell extends StatelessWidget {
     );
   }
 }
+
+/// One M3 catalog provider per [AppState], so route rebuilds keep the same
+/// provider identity and do not reset the live WolfGuard binding.
+final Expando<CandidateProvider> _wolfGuardCandidates = Expando();
+
+CandidateProvider _wolfGuardCandidatesFor(AppState state) =>
+    _wolfGuardCandidates[state] ??= AplCandidateProvider(state.productCatalog);
